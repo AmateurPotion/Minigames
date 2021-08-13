@@ -1,0 +1,44 @@
+apply plugin:"java"
+//apply plugin:"application"
+
+version '1.0'
+
+sourceCompatibility = 16
+targetCompatibility = 16
+
+sourceSets.main.java.srcDirs = ["src"]
+
+compileJava.options.encoding = "UTF-8"
+compileTestJava.options.encoding = "UTF-8"
+
+repositories{
+    mavenCentral()
+    maven{url 'https://www.jitpack.io'}
+    google()
+}
+
+ext{
+    //the build number that this plugin is made for
+    mindustryVersion = 'v129.2'
+}
+
+dependencies{
+    compileOnly "com.github.Anuken.Arc:arc-core:$mindustryVersion"
+    compileOnly "com.github.Anuken.Mindustry:core:$mindustryVersion"
+    compileOnly "com.github.Anuken.Mindustry:server:$mindustryVersion"
+    compileOnly "com.github.Anuken:HexedPlugin:0.6"
+    compileOnly "com.github.Anuken.Mindustry:annotations:v126"
+    //annotationProcessor "com.github.Anuken.Mindustry:annotations:v126"
+    //implementation 'com.google.firebase:firebase-admin:8.0.0'
+}
+
+jar{
+    archiveFileName = "${project.archivesBaseName}.jar"
+    from{
+        configurations.runtimeClasspath.collect{it.isDirectory() ? it : zipTree(it)}
+    }
+
+    from(rootDir){
+        include "plugin.json"
+    }
+}
