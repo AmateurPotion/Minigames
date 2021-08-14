@@ -103,23 +103,15 @@ public class EventLoader {
                PlayerData data = jdb.players.find(p -> p.player == e.player());
                if(line == data.config.getInt("line@NS", 1)) {
                    data.config.put("line@NS", line != 4 ? line + 1 : 1);
-                   switch(line) {
-                       case 1:
-                           PlayerManager.setPosition(e.player(), Marathon.start2.getX(), Marathon.start2.getY());
-                           break;
-                       case 2:
-                           PlayerManager.setPosition(e.player(), Marathon.start3.getX(), Marathon.start3.getY());
-                           break;
-                       case 3:
-                           PlayerManager.setPosition(e.player(), Marathon.start4.getX(), Marathon.start4.getY());
-                           break;
-                       case 4:
-                           PlayerManager.setPosition(e.player(), Marathon.start1.getX(), Marathon.start1.getY());
-                           break;
+                   switch (line) {
+                       case 1 -> PlayerManager.setPosition(e.player(), Marathon.start2.getX(), Marathon.start2.getY());
+                       case 2 -> PlayerManager.setPosition(e.player(), Marathon.start3.getX(), Marathon.start3.getY());
+                       case 3 -> PlayerManager.setPosition(e.player(), Marathon.start4.getX(), Marathon.start4.getY());
+                       case 4 -> PlayerManager.setPosition(e.player(), Marathon.start1.getX(), Marathon.start1.getY());
                    }
-                   data.config.put("score", data.config.getInt("score", 0) + (int)e.player().unit().health() + (int)e.player().unit().ammo());
-                   PlayerManager.changeUnit(e.player(), content.units().copy().filter(u -> u != UnitTypes.omura).random());
-                   Call.setHudText(e.player().con, "score : " + data.config.getInt("score", 0));
+                   int score = (int)e.player().unit().health() + (int)e.player().unit().ammo();
+                   Marathon.updateScore(data, score);
+                   PlayerManager.changeUnit(e.player(), content.units().copy().filter(u -> u != UnitTypes.omura && u != UnitTypes.block).random());
                } else {
                    Marathon.home(data);
                }

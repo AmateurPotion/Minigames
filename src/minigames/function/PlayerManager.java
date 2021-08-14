@@ -1,5 +1,10 @@
 package minigames.function;
 
+import arc.Core;
+import arc.struct.Seq;
+import mindustry.Vars;
+import mindustry.content.StatusEffects;
+import mindustry.ctype.ContentType;
 import mindustry.gen.Call;
 import mindustry.gen.Player;
 import mindustry.gen.Unit;
@@ -9,6 +14,13 @@ public class PlayerManager {
 
     public static void changeUnit(Player player, UnitType unit) {
         Unit target = unit.spawn(player.team(), player);
+        if(Core.settings.getBool("marathon", false)) {
+
+            if(target.health() > 1000) target.health(target.health() / 20);
+            if(target.health() > 500) target.health(target.health() / 2);
+
+            if(target.type.flying)target.apply(StatusEffects.tarred, Float.MAX_VALUE);
+        }
         if(player.unit() != null) Call.unitDespawn(player.unit());
         player.unit(target);
     }
