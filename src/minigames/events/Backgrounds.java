@@ -14,9 +14,11 @@ import minigames.Entry;
 import minigames.database.PlayerData;
 import minigames.modes.Marathon;
 
+import static minigames.modes.Marathon.updateScore;
+
 public class Backgrounds {
     public static Timer background;
-    private static Timer.Task checkTask;
+    private final Timer.Task checkTask;
     public Backgrounds() {
         background = new Timer();
 
@@ -29,8 +31,7 @@ public class Backgrounds {
                         if(current == null || current.floor() == Blocks.space) {
                             PlayerData data = Entry.jdb.players.find(d -> d.player == player);
                             Marathon.home(data);
-                            data.config.put("score", data.config.getInt("score", 0) - 10);
-                            Call.setHudText(data.player.con, "score : " + data.config.getInt("score", 0));
+                            updateScore(data, -(int)(data.config.getInt("score", 0) * 0.01f));
                         }
                         else if(current.floor() == Blocks.sandWater || current.floor() == Blocks.dirt) Events.fire(new EventList.MarathonLineArrivalEvent(player, current));
 

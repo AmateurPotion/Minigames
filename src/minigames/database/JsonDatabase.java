@@ -16,7 +16,7 @@ public class JsonDatabase {
     }
 
     public boolean updatePlayerData(PlayerData data) {
-        Fi path = new Fi(databaseDirectory.path() + "/" + data.player.uuid() + ".json");
+        Fi path = new Fi(databaseDirectory.path() + "/" + data.player.uuid().replaceAll("/", "\\") + ".json");
         if(!path.exists()) {
             Jval pData = Jval.newObject();
             data.config.asObject().forEach(e -> {
@@ -24,7 +24,7 @@ public class JsonDatabase {
                     pData.put(e.key, e.value);
                 }
             });
-            path.writeString(pData.toString(Jval.Jformat.formatted));
+            path.writeString(pData.toString(Jval.Jformat.formatted), true);
             return true;
         } else {
             return false;
@@ -33,7 +33,7 @@ public class JsonDatabase {
 
     public @Nullable Jval getPlayerData(String uuid) {
         Jval data;
-        Fi path = new Fi(databaseDirectory.path() + "/" + uuid + ".json");
+        Fi path = new Fi(databaseDirectory.path() + "/" + uuid.replaceAll("/", "\\") + ".json");
 
         if(path.exists()) {
             data = Jval.read(path.reader());

@@ -10,10 +10,8 @@ import mindustry.game.Team;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Payloadc;
-import mindustry.gen.Player;
 import mindustry.world.blocks.defense.Wall;
 import mindustry.world.blocks.storage.StorageBlock;
-import minigames.Entry;
 import minigames.function.PlayerManager;
 import minigames.database.PlayerData;
 import minigames.modes.Marathon;
@@ -23,6 +21,7 @@ import static mindustry.Vars.state;
 import static mindustry.content.Blocks.coreShard;
 import static mindustry.content.Items.*;
 import static minigames.Entry.jdb;
+import static minigames.modes.Marathon.updateScore;
 
 public class EventLoader {
     public void load() {
@@ -73,15 +72,22 @@ public class EventLoader {
             }
             if(Core.settings.getBool("marathon", false)) {
                 e.player.team(Team.derelict);
-                //say [/join] to start
+                Call.infoMessage(e.player.con, """
+                        current mode : blood marathon
+                        [/join] to join this game
+                        out of line : - 1% score
+                        death : - 10% score
+                        [/respawn] : -200 score
+                        [/spec] : change to spectate mode
+                        """);
             }
         });
     }
 
     public void playerLeaveEvents() {
         Events.on(EventType.PlayerLeave.class, e -> {
-            if(Core.settings.getBool("marathon", false) && e.player.unit() != null) {
-                Call.unitDespawn(e.player.unit());
+            if(Core.settings.getBool("marathon", false)) {
+                Groups.unit.each(unit -> unit.team() == e.player.team(), Call::unitDespawn);
             }
             jdb.updatePlayerData(jdb.players.find(data -> data.player == e.player));
             jdb.players.remove(data -> data.player == e.player);
@@ -123,7 +129,10 @@ public class EventLoader {
         Events.on(EventType.UnitDestroyEvent.class, e -> {
             if(Core.settings.getBool("marathon", false)) {
                 PlayerData data = jdb.players.find(p -> p.player.team() == e.unit.team());
-                if(data != null) Marathon.respawn(data);
+                if(data != null) {
+                    updateScore(data, -(int)(data.config.getInt("score", 0) * 0.1f));
+                    Marathon.respawn(data);
+                }
             }
         });
     }

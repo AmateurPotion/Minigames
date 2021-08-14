@@ -1,7 +1,9 @@
 package minigames;
 
 import arc.*;
+import arc.files.Fi;
 import arc.util.*;
+import mindustry.Vars;
 import mindustry.mod.*;
 import minigames.commands.CommandLoader;
 import minigames.database.JsonDatabase;
@@ -9,6 +11,10 @@ import minigames.events.Backgrounds;
 import minigames.events.EventLoader;
 import minigames.function.TeamManager;
 
+import java.io.File;
+import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.Objects;
 
 public class Entry extends Mod{
@@ -18,6 +24,7 @@ public class Entry extends Mod{
 
     @Override
     public void init() {
+        loadMap();
         new EventLoader().load();
         jdb = new JsonDatabase();
         Core.settings.put("marathon", false);
@@ -45,5 +52,19 @@ public class Entry extends Mod{
     @Override
     public void registerClientCommands(CommandHandler handler) {
         cLoader.registerClientCommands(handler);
+    }
+
+    private void loadMap() {
+        String[] mapList = new String[]{"4P.msav", "marathon.msav"};
+        Fi mapDir = new Fi(Vars.dataDirectory.path() + "/maps", Vars.dataDirectory.type());
+        for(String mapName : mapList) {
+            Fi target = new Fi(mapDir.path() + "/" + mapName, mapDir.type());
+            if(!target.exists()) {
+                InputStream in = getClass().getResourceAsStream("/assets/maps/" + mapName);
+                if(in != null) {
+                    target.write(in, false);
+                }
+            }
+        }
     }
 }

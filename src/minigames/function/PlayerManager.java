@@ -12,7 +12,7 @@ import mindustry.type.UnitType;
 
 public class PlayerManager {
 
-    public static void changeUnit(Player player, UnitType unit) {
+    public static Unit changeUnit(Player player, UnitType unit) {
         Unit target = unit.spawn(player.team(), player);
         if(Core.settings.getBool("marathon", false)) {
 
@@ -23,6 +23,7 @@ public class PlayerManager {
         }
         if(player.unit() != null) Call.unitDespawn(player.unit());
         player.unit(target);
+        return target;
     }
 
     public static void setPosition(Player player, float x, float y) {
@@ -30,8 +31,12 @@ public class PlayerManager {
             Unit target = player.unit().type().spawn(player.team(), x, y);
             target.health(player.unit().health());
             target.ammo(player.unit().ammo());
+            Vars.content.statusEffects().each(s -> {
+                if(player.unit().hasEffect(s)) target.apply(s);
+            });
+            if(target.type.flying && Core.settings.getBool("marathon", false)) target.apply(StatusEffects.tarred, Float.MAX_VALUE); //공중 너프
             Call.unitDespawn(player.unit());
-            Call.unitControl(player, target);
+            player.unit(target);
         }
     }
-}// say ./join to start
+}

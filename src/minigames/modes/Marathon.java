@@ -12,6 +12,7 @@ import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Unit;
 import mindustry.maps.Map;
+import minigames.Entry;
 import minigames.database.PlayerData;
 import minigames.function.PlayerManager;
 
@@ -22,6 +23,8 @@ import static mindustry.Vars.*;
 import static mindustry.Vars.netServer;
 
 public class Marathon {
+    public static PlayerData[] scoreboard = new PlayerData[3];
+    private static boolean changed = false;
     public static Position start1 = new Position() {
         @Override
         public float getX() {
@@ -68,19 +71,7 @@ public class Marathon {
             };
 
     public static void startMarathon() {
-        Vars.content.units().each(pred -> pred.health > 500 , unit -> {
-            unit.speed = unit.speed * 2f;
-            if(unit.health > 1000) {
-                unit.health = unit.health / 1000;
-            } else {
-                unit.health = unit.health / 2;
-            }
-        });
-        content.units().find(unitType -> unitType == UnitTypes.oct).abilities.each(a -> {
-            if(a instanceof ShieldRegenFieldAbility s) {
-                s.reload = 3;
-            }
-        });
+        content.units().find(unitType -> unitType == UnitTypes.dagger).abilities.add(new ShieldRegenFieldAbility(20f, 40f, 60f * 4, 60f));
 
         logic.reset();
         Map loadMap = maps.all().find(map -> Objects.equals(map.name(), "Marathon"));
@@ -109,14 +100,51 @@ public class Marathon {
         }
         data.player.team(t);
         data.config.put("line@NS", 1);
-        Unit unit = content.units().copy().filter(u -> u != UnitTypes.omura).random().spawn(t, 15 * 8, 134 * 8);
+        Unit unit = content.units().copy().filter(u -> u != UnitTypes.block).random().spawn(t, 15 * 8, 134 * 8);
         Call.unitControl(data.player, unit);
     }
 
     public static void respawn(PlayerData data) {
-        PlayerManager.changeUnit(data.player, content.units().copy().filter(u -> u != UnitTypes.omura).random());
-        data.config.put("score", data.config.getInt("score", 0) - 100);
-        Call.setHudText(data.player.con, "score : " + data.config.getInt("score", 0));
+        PlayerManager.changeUnit(data.player, content.units().copy().filter(u -> (u != UnitTypes.omura || data.config.getInt("score", 0) < 10000) && u != UnitTypes.block).random());
         home(data);
+    }
+
+    public static void updateScore(PlayerData data, int variation) {
+        if(Core.settings.getBool("marathon", false)){
+            int score = data.config.getInt("score", 0) + variation;
+            changed = false;
+            data.config.put("score", score);
+            Call.setHudText(data.player.con, "score : " + data.config.getInt("score", 0));
+            updateScore();
+        }
+    }
+
+    public static void updateScore() {
+        Entry.jdb.players.each(d -> {
+            for (int i = 0; i < scoreboard.length; i++) {
+                if (scoreboard[i] == null) {
+                    scoreboard[i] = d;
+                    changed = true;
+                    break;
+                } else if (scoreboard[i].config.getInt("score", 0) < d.config.getInt("score", 0)) {
+                    scoreboard[i] = d;
+                    changed = true;
+                    break;
+                } else if(Objects.equals(scoreboard[i].player.name(), d.player.name())) {
+                    break;
+                }
+            }
+        });
+
+        if(changed) {
+            Call.announce(scoreboard());
+        }
+    }
+
+    public static String scoreboard() {
+        return "< ScoreBoard >\n" +
+                (scoreboard[0] != null ? "1st " + scoreboard[0].player.name() + "(" + scoreboard[0].config.getInt("score", 0) + ")\n" : "\n")  +
+                (scoreboard[1] != null ? "2nd " + scoreboard[1].player.name() + "(" + scoreboard[1].config.getInt("score", 0) + ")\n" : "\n")  +
+                (scoreboard[2] != null ? "3rd " + scoreboard[2].player.name() + "(" + scoreboard[2].config.getInt("score", 0) + ")" : "");
     }
 }

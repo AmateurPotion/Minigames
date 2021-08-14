@@ -3,12 +3,17 @@ package minigames.commands;
 import arc.Core;
 import arc.util.CommandHandler;
 import arc.util.Log;
+import mindustry.Vars;
+import mindustry.content.Items;
 import mindustry.core.GameState;
 import mindustry.game.Team;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
+import mindustry.type.Category;
 import mindustry.type.UnitType;
+import mindustry.world.Block;
+import mindustry.world.blocks.defense.Wall;
 import minigames.Entry;
 import minigames.database.PlayerData;
 import minigames.function.PlayerManager;
@@ -19,6 +24,8 @@ import java.util.Objects;
 
 import static arc.util.Log.err;
 import static mindustry.Vars.*;
+import static mindustry.type.ItemStack.with;
+import static minigames.modes.Marathon.updateScore;
 
 public class CommandLoader {
 
@@ -137,12 +144,16 @@ public class CommandLoader {
                 PlayerData data = Entry.jdb.players.find(p -> p.player == player);
                 if(!data.config.getBool("joinAllow@NS", true)) {
                     Marathon.respawn(data);
-                    data.config.put("score", data.config.getInt("score", 0) - 100);
-                    Call.setHudText(data.player.con, "score : " + data.config.getInt("score", 0));
+                    updateScore(data, -200);
                 }
             }
         });
 
+        handler.<Player>register("scoreboard", "open scoreboard", (args, player) -> {
+            if(Core.settings.getBool("marathon", false)) {
+                Call.infoMessage(player.con, Marathon.scoreboard());
+            }
+        });
     }
 
     private boolean intCheck(String input) {
