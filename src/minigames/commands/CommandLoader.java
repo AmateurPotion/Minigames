@@ -3,29 +3,26 @@ package minigames.commands;
 import arc.Core;
 import arc.util.CommandHandler;
 import arc.util.Log;
-import mindustry.Vars;
-import mindustry.content.Items;
+import mindustry.content.UnitTypes;
 import mindustry.core.GameState;
 import mindustry.game.Team;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
-import mindustry.type.Category;
+import mindustry.gen.Unit;
 import mindustry.type.UnitType;
-import mindustry.world.Block;
-import mindustry.world.blocks.defense.Wall;
-import minigames.Entry;
-import minigames.database.PlayerData;
+import minigames.ctype.Character;
+import minigames.database.DataType.PlayerData;
 import minigames.function.PlayerManager;
 import minigames.function.TeamManager;
-import minigames.modes.Marathon;
+import minigames.modes.marathon.Marathon;
 
 import java.util.Objects;
 
 import static arc.util.Log.err;
 import static mindustry.Vars.*;
-import static mindustry.type.ItemStack.with;
-import static minigames.modes.Marathon.updateScore;
+import static minigames.Entry.db;
+import static minigames.modes.marathon.Marathon.updateScore;
 
 public class CommandLoader {
 
@@ -116,12 +113,27 @@ public class CommandLoader {
                 Marathon.startMarathon();
             }
         });
+
+        handler.register("saveAll", "", args -> {
+            db.players.each(db::savePlayerData);
+        });
+
+        handler.register("perm", "<name> <level>", "", args -> {
+            if(args.length == 2) {
+                if(intCheck(args[1])) {
+                    PlayerData data = db.find(args[0]);
+                    data.permissionLevel(Integer.parseInt(args[1]));
+                }
+            } else if(args.length == 1) {
+                Log.info(db.find(args[0]).permissionLevel());
+            }
+        });
     }
 
     public void registerClientCommands(CommandHandler handler) {
         handler.<Player>register("join", "Join to current game", (args, player) -> {
-            if(Core.settings.getBool("marathon", false)) {
-                PlayerData data = Entry.jdb.players.find(p -> p.player == player);
+            if(db.gameMode("marathon")) {
+                PlayerData data = db.players.find(p -> p.player == player);
                 if(data.config.getBool("joinAllow@NS", true)) {
                     Marathon.playerJoin(data);
                     data.config.put("joinAllow@NS", false);
@@ -132,7 +144,7 @@ public class CommandLoader {
 
         handler.<Player>register("spec", "change to spectate mode", (args, player) -> {
             if(player.team() != Team.derelict) {
-                PlayerData data = Entry.jdb.players.find(p -> p.player == player);
+                PlayerData data = db.players.find(p -> p.player == player);
                 data.config.put("line@NS", 1);
                 data.config.put("joinAllow@NS", true);
                 if(player.unit() != null)Call.unitDespawn(player.unit());
@@ -140,8 +152,8 @@ public class CommandLoader {
         });
 
         handler.<Player>register("respawn", "respawn", (args, player) -> {
-            if(player.team() != Team.derelict && Core.settings.getBool("marathon", false)) {
-                PlayerData data = Entry.jdb.players.find(p -> p.player == player);
+            if(player.team() != Team.derelict && db.gameMode("marathon")) {
+                PlayerData data = db.players.find(p -> p.player == player);
                 if(!data.config.getBool("joinAllow@NS", true)) {
                     Marathon.respawn(data);
                     updateScore(data, -200);
@@ -150,11 +162,27 @@ public class CommandLoader {
         });
 
         handler.<Player>register("scoreboard", "open scoreboard", (args, player) -> {
-            if(Core.settings.getBool("marathon", false)) {
+            if(db.gameMode("marathon")) {
                 Call.infoMessage(player.con, Marathon.scoreboard());
             }
         });
+
+        handler.<Player>register("a", "open scoreboard", (args, player) -> {
+            if(db.find(player).permissionLevel() > 10) {
+                p = new Character("test", Team.derelict);
+                Unit u = UnitTypes.alpha.spawn(player.team(), player);
+                p.unit(u);
+            }
+        });
+
+        handler.<Player>register("r", "open scoreboard", (args, player) -> {
+            if(db.find(player).permissionLevel() > 10) {
+                Call.playerDisconnect(p.id);
+                p.remove();
+            }
+        });
     }
+    Character p;
 
     private boolean intCheck(String input) {
         try {

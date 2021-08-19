@@ -7,14 +7,14 @@ import mindustry.Vars;
 import mindustry.content.Blocks;
 import mindustry.game.Team;
 import mindustry.gen.BlockUnitc;
-import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.world.Tile;
 import minigames.Entry;
-import minigames.database.PlayerData;
-import minigames.modes.Marathon;
+import minigames.database.DataType.PlayerData;
+import minigames.modes.marathon.Marathon;
 
-import static minigames.modes.Marathon.updateScore;
+import static minigames.Entry.db;
+import static minigames.modes.marathon.Marathon.updateScore;
 
 public class Backgrounds {
     public static Timer background;
@@ -25,11 +25,11 @@ public class Backgrounds {
         checkTask = new Timer.Task() {
             @Override
             public void run() {
-                if(Vars.state.isPlaying() && Core.settings.getBool("marathon", false)) {
+                if(Vars.state.isPlaying() && db.gameMode("marathon")) {
                     Groups.player.each(player -> player.team() != Team.derelict && player.unit() != null && !(player.unit() instanceof BlockUnitc), player -> {
                         Tile current = Vars.world.tile((int)(player.x / 8), (int)(player.y / 8));
                         if(current == null || current.floor() == Blocks.space) {
-                            PlayerData data = Entry.jdb.players.find(d -> d.player == player);
+                            PlayerData data = db.players.find(d -> d.player == player);
                             Marathon.home(data);
                             updateScore(data, -(int)(data.config.getInt("score", 0) * 0.01f));
                         }

@@ -3,22 +3,20 @@ package minigames;
 import arc.*;
 import arc.files.Fi;
 import arc.util.*;
+import arc.util.io.Streams;
 import mindustry.Vars;
 import mindustry.mod.*;
 import minigames.commands.CommandLoader;
-import minigames.database.JsonDatabase;
+import minigames.database.Database;
 import minigames.events.Backgrounds;
 import minigames.events.EventLoader;
 import minigames.function.TeamManager;
 
-import java.io.File;
 import java.io.InputStream;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.Objects;
 
 public class Entry extends Mod{
-    public static JsonDatabase jdb;
+    public static Database db;
     private final CommandLoader cLoader = new CommandLoader();
     private Backgrounds backgrounds;
 
@@ -26,15 +24,15 @@ public class Entry extends Mod{
     public void init() {
         loadMap();
         new EventLoader().load();
-        jdb = new JsonDatabase();
-        Core.settings.put("marathon", false);
+        db = new Database();
+        db.loadSkillList();
         backgrounds = new Backgrounds();
 
         Timer shuffleTimer = new Timer();
         Timer.Task shuffleTask = new Timer.Task() {
             @Override
             public void run() {
-                if(Objects.equals(Core.settings.getBool("teamShuffle", false), true)) { // put teamShuffle false bool
+                if(db.gameMode("shuffle")) { // put teamShuffle false bool
                     TeamManager.shuffle();
                 }
             }
@@ -63,6 +61,7 @@ public class Entry extends Mod{
                 InputStream in = getClass().getResourceAsStream("/assets/maps/" + mapName);
                 if(in != null) {
                     target.write(in, false);
+                    Streams.close(in);
                 }
             }
         }

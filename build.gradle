@@ -18,7 +18,7 @@ repositories{
 
 ext{
     //the build number that this plugin is made for
-    mindustryVersion = 'v129.2'
+    mindustryVersion = 'v130'
 }
 
 dependencies{
@@ -28,6 +28,7 @@ dependencies{
     compileOnly "com.github.Anuken:HexedPlugin:0.6"
     compileOnly "com.github.Anuken.Mindustry:annotations:v126"
     //annotationProcessor "com.github.Anuken.Mindustry:annotations:v126"
+    compileOnly files("libs/Essentials.jar")
     //implementation 'com.google.firebase:firebase-admin:8.0.0'
 }
 

@@ -1,9 +1,7 @@
-package minigames.modes;
+package minigames.modes.marathon;
 
 import arc.Core;
 import arc.math.geom.Position;
-import arc.util.Log;
-import mindustry.Vars;
 import mindustry.content.UnitTypes;
 import mindustry.entities.abilities.ShieldRegenFieldAbility;
 import mindustry.game.Gamemode;
@@ -13,7 +11,7 @@ import mindustry.gen.Groups;
 import mindustry.gen.Unit;
 import mindustry.maps.Map;
 import minigames.Entry;
-import minigames.database.PlayerData;
+import minigames.database.DataType.PlayerData;
 import minigames.function.PlayerManager;
 
 import java.util.Objects;
@@ -21,6 +19,7 @@ import java.util.Random;
 
 import static mindustry.Vars.*;
 import static mindustry.Vars.netServer;
+import static minigames.Entry.db;
 
 public class Marathon {
     public static PlayerData[] scoreboard = new PlayerData[3];
@@ -80,6 +79,8 @@ public class Marathon {
         logic.play();
         netServer.openServer();
         Core.settings.put("marathon", true);
+
+        Team.sharded.core().health(Float.MAX_VALUE);
     }
 
     public static void home(PlayerData data) {
@@ -105,39 +106,28 @@ public class Marathon {
     }
 
     public static void respawn(PlayerData data) {
-        PlayerManager.changeUnit(data.player, content.units().copy().filter(u -> (u != UnitTypes.omura || data.config.getInt("score", 0) < 10000) && u != UnitTypes.block).random());
-        home(data);
+        if(db.gameMode("marathon")) {
+            Groups.unit.each(u -> u.team() == data.player.team(), Call::unitDespawn);
+            PlayerManager.changeUnit(data.player, content.units().copy().filter(u -> (u != UnitTypes.omura || data.config.getInt("score", 0) < 10000) && u != UnitTypes.block).random());
+            home(data);
+        }
     }
 
     public static void updateScore(PlayerData data, int variation) {
-        if(Core.settings.getBool("marathon", false)){
+        if(db.gameMode("marathon")){
             int score = data.config.getInt("score", 0) + variation;
-            changed = false;
             data.config.put("score", score);
-            Call.setHudText(data.player.con, "score : " + data.config.getInt("score", 0));
+            Call.setHudText(data.player.con, "score : " + score);
             updateScore();
+            if(score > 10000) Call.announce(data.player.name() + "님이 " + score + "점을 달성하셨습니다!");
         }
     }
 
     public static void updateScore() {
-        Entry.jdb.players.each(d -> {
-            for (int i = 0; i < scoreboard.length; i++) {
-                if (scoreboard[i] == null) {
-                    scoreboard[i] = d;
-                    changed = true;
-                    break;
-                } else if (scoreboard[i].config.getInt("score", 0) < d.config.getInt("score", 0)) {
-                    scoreboard[i] = d;
-                    changed = true;
-                    break;
-                } else if(Objects.equals(scoreboard[i].player.name(), d.player.name())) {
-                    break;
-                }
-            }
-        });
-
-        if(changed) {
-            Call.announce(scoreboard());
+        changed = false;
+        db.players.sort(d -> d.config.getInt("score", 0));
+        for(int i = 0; i < 3 && i < db.players.size; i++) {
+            scoreboard[i] = db.players.get(db.players.size - 1 - i);
         }
     }
 
