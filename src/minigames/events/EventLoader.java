@@ -104,7 +104,8 @@ public class EventLoader {
 
     public void marathonLineArrivalEvents() {
         Events.on(EventList.MarathonLineArrivalEvent.class, e -> {
-           if(Core.settings.getBool("marathon", false)) {
+            // TODO 중복되는 연산 삭제
+           if(db.gameMode("marathon")) {
                int line = e.tile().x > 100 ? (e.tile().y > 100 ? 1 : 2) : (e.tile().y > 100 ? 4 : 3);
                PlayerData data = jdb.players.find(p -> p.player == e.player());
                if(line == data.config.getInt("line@NS", 1)) {
