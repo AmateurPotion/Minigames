@@ -38,8 +38,11 @@ jar{
         configurations.runtimeClasspath.collect{it.isDirectory() ? it : zipTree(it)}
     }
 
+    from("assets/"){
+        include "**"
+    }
+
     from(rootDir){
         include "plugin.json"
-        include "assets/**"
     }
 }

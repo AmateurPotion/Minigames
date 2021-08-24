@@ -3,6 +3,7 @@ package minigames.database.DataType;
 import arc.struct.Seq;
 import arc.util.serialization.Jval;
 import mindustry.gen.Player;
+import minigames.ctype.CoolTime;
 import minigames.ctype.Skill;
 
 import java.util.Objects;
@@ -13,15 +14,20 @@ public class PlayerData {
     public final Player player;
     public final Seq<Skill<?>> skillSet;
     public final Jval config;
+    public final CoolTime coolTimes;
 
     public PlayerData(Player player) {
         this(player, db.skills);
     }
 
     public PlayerData(Player player, Seq<Skill<?>> originalSkills) {
+        // init
         this.player = player;
         skillSet = Seq.with();
         config = Objects.requireNonNullElseGet(db.getPlayerData(player.uuid()), Jval::newObject);
+        coolTimes = new CoolTime();
+
+        // load
         Jval.JsonArray tempSkillSet;
         if(config.get("skillSet") != null) {
             tempSkillSet = config.get("skillSet").asArray();

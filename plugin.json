@@ -1,5 +1,5 @@
 {
-  "name": "ExamplePlugin",
+  "name": "Minigames",
   "author": "AmateurPotion",
   "main": "minigames.Entry",
   "description": "A plugin to demonstrate some basic features.",
