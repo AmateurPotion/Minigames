@@ -1,5 +1,6 @@
 package minigames.events;
 
+import arc.Core;
 import arc.Events;
 import arc.struct.Seq;
 import mindustry.content.Bullets;
@@ -106,14 +107,14 @@ public class EventLoader {
                if(line == data.config.getInt("line@NS", 1)) {
                    data.config.put("line@NS", line != 4 ? line + 1 : 1);
                    Groups.unit.each(u -> u.team() == e.player().team(), Call::unitDespawn);
-                   PlayerManager.changeUnit(e.player(), content.units().copy().filter(u -> (u != UnitTypes.omura || data.config.getInt("score", 0) < 10000) && u != UnitTypes.block).random());
+                   PlayerManager.changeUnit(e.player(), content.units().copy().filter(u -> u != UnitTypes.block).random());
                    switch (line) {
                        case 1 -> PlayerManager.setPosition(e.player(), Marathon.start2.getX(), Marathon.start2.getY());
                        case 2 -> PlayerManager.setPosition(e.player(), Marathon.start3.getX(), Marathon.start3.getY());
                        case 3 -> PlayerManager.setPosition(e.player(), Marathon.start4.getX(), Marathon.start4.getY());
                        case 4 -> PlayerManager.setPosition(e.player(), Marathon.start1.getX(), Marathon.start1.getY());
                    }
-                   int score = (int)e.player().unit().health() + (int)e.player().unit().ammo();
+                   int score = (int)(e.player().unit().health() * e.player().unit().ammof());
                    Marathon.updateScore(data, score);
                }
            }

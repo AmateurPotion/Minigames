@@ -1,16 +1,19 @@
 package minigames.commands;
 
 import arc.Core;
+import arc.Events;
 import arc.util.CommandHandler;
 import arc.util.Log;
 import mindustry.content.UnitTypes;
 import mindustry.core.GameState;
+import mindustry.game.EventType;
 import mindustry.game.Team;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.gen.Unit;
 import mindustry.type.UnitType;
+import mindustry.ui.Menus;
 import minigames.ctype.Character;
 import minigames.database.DataType.PlayerData;
 import minigames.function.PlayerManager;
@@ -166,23 +169,7 @@ public class CommandLoader {
                 Call.infoMessage(player.con, Marathon.scoreboard());
             }
         });
-
-        handler.<Player>register("a", "open scoreboard", (args, player) -> {
-            if(db.find(player).permissionLevel() > 10) {
-                p = new Character("test", Team.derelict);
-                Unit u = UnitTypes.alpha.spawn(player.team(), player);
-                p.unit(u);
-            }
-        });
-
-        handler.<Player>register("r", "open scoreboard", (args, player) -> {
-            if(db.find(player).permissionLevel() > 10) {
-                Call.playerDisconnect(p.id);
-                p.remove();
-            }
-        });
     }
-    Character p;
 
     private boolean intCheck(String input) {
         try {

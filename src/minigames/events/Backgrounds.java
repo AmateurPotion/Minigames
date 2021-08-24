@@ -26,6 +26,10 @@ public class Backgrounds {
             @Override
             public void run() {
                 if(Vars.state.isPlaying() && db.gameMode("marathon")) {
+                    db.players.each(data -> !data.config.getBool("joinAllow@NS", true), data -> {
+                        data.coolTimes.proceed(0.5f);
+                    });
+
                     Groups.player.each(player -> player.team() != Team.derelict && player.unit() != null && !(player.unit() instanceof BlockUnitc), player -> {
                         Tile current = Vars.world.tile((int)(player.x / 8), (int)(player.y / 8));
                         if(current == null || current.floor() == Blocks.space) {
@@ -33,9 +37,7 @@ public class Backgrounds {
                             Marathon.home(data);
                             updateScore(data, -(int)(data.config.getInt("score", 0) * 0.01f));
                         }
-                        else if(current.floor() == Blocks.sandWater || current.floor() == Blocks.dirt) Events.fire(new EventList.MarathonLineArrivalEvent(player, current));
-
-                        //Log.info(player.x + " / " + player.y + " / " + (current.floor() != null ? current.floor().name : null));
+                        else if(current.floor() == Blocks.sandWater || current.floor() == Blocks.dirt) Events.fire(new EventList.MarathonLineArrivalEvent(player, player.unit(), current));
                     });
                 }
             }

@@ -13,7 +13,6 @@ import minigames.events.EventLoader;
 import minigames.function.TeamManager;
 
 import java.io.InputStream;
-import java.util.Objects;
 
 public class Entry extends Mod{
     public static Database db;
@@ -23,9 +22,10 @@ public class Entry extends Mod{
     @Override
     public void init() {
         loadMap();
-        new EventLoader().load();
         db = new Database();
-        db.loadSkillList();
+        // loadEvent
+        new EventLoader().load();
+        db.skillLoader.load();
         backgrounds = new Backgrounds();
 
         Timer shuffleTimer = new Timer();

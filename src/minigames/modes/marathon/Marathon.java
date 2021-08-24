@@ -23,7 +23,6 @@ import static minigames.Entry.db;
 
 public class Marathon {
     public static PlayerData[] scoreboard = new PlayerData[3];
-    private static boolean changed = false;
     public static Position start1 = new Position() {
         @Override
         public float getX() {
@@ -78,7 +77,8 @@ public class Marathon {
         state.rules = loadMap.applyRules(Gamemode.survival);
         logic.play();
         netServer.openServer();
-        Core.settings.put("marathon", true);
+        db.gameMode("marathon", true);
+        db.gameMode("solo", true);
 
         Team.sharded.core().health(Float.MAX_VALUE);
     }
@@ -114,7 +114,7 @@ public class Marathon {
     }
 
     public static void updateScore(PlayerData data, int variation) {
-        if(db.gameMode("marathon")){
+        if(db.gameMode("marathon") && data != null){
             int score = data.config.getInt("score", 0) + variation;
             data.config.put("score", score);
             Call.setHudText(data.player.con, "score : " + score);
@@ -124,7 +124,6 @@ public class Marathon {
     }
 
     public static void updateScore() {
-        changed = false;
         db.players.sort(d -> d.config.getInt("score", 0));
         for(int i = 0; i < 3 && i < db.players.size; i++) {
             scoreboard[i] = db.players.get(db.players.size - 1 - i);
