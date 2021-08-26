@@ -3,12 +3,12 @@ package minigames.events;
 import arc.Core;
 import arc.Events;
 import arc.struct.Seq;
-import mindustry.content.Bullets;
+import arc.util.Log;
+import mindustry.Vars;
 import mindustry.content.UnitTypes;
 import mindustry.game.EventType;
 import mindustry.game.Team;
 import mindustry.gen.*;
-import mindustry.type.UnitType;
 import mindustry.world.blocks.defense.Wall;
 import mindustry.world.blocks.storage.StorageBlock;
 import minigames.function.PlayerManager;
@@ -23,8 +23,6 @@ import static mindustry.content.Items.*;
 import static minigames.Entry.db;
 
 public class EventLoader {
-    private final Seq<UnitType> typeList = Seq.with(UnitTypes.oct, UnitTypes.aegires);
-
     public void load() {
         tapEvents();
         pickUpEvents();
@@ -33,6 +31,8 @@ public class EventLoader {
         marathonLineArrivalEvents();
         unitDestroyEvents();
         gameOverEvents();
+
+        db.loadSkillEvent();
     }
 
     public void tapEvents() {
@@ -40,14 +40,6 @@ public class EventLoader {
             if (e.tile.build instanceof StorageBlock.StorageBuild build) {
                 if(build.items.get(copper) >= 990 && build.items.get(lead) >= 990 && e.tile.block().size == 3) {
                     Call.setTile(e.tile, coreShard, e.tile.team(), 0);
-                }
-            }
-            if(db.gameMode("marathon") && e.player.unit() != null) {
-                if(typeList.contains(e.player.unit().type())) {
-                    for(int i = 0; i < 8; i++) {
-                        Call.createBullet(Bullets.heavyCryoShot, e.player.team(), e.tile.x * 8, e.tile.y * 8
-                                , 45 * i, 0.1f, 0.8f, 1);
-                    }
                 }
             }
         });
@@ -75,14 +67,8 @@ public class EventLoader {
             db.players.add(new PlayerData(e.player));
             if(db.gameMode("marathon")) {
                 e.player.team(Team.derelict);
-                Call.infoMessage(e.player.con, """
-                        current mode : blood marathon
-                        [/join] to join this game
-                        out of line : - 1% score
-                        death : - 10% score
-                        [/respawn] : -200 score
-                        [/spec] : change to spectate mode
-                        """);
+                Call.menu(e.player.con, db.menu.get("marathon_join"), "Welcome!",
+                        db.bundle.getString(e.player, "marathon.join"), new String[][]{{db.bundle.getString(e.player, "marathon.join.b1"), db.bundle.getString(e.player, "marathon.join.b2")}});
             }
         });
     }
@@ -127,13 +113,7 @@ public class EventLoader {
                 PlayerData data = db.players.find(p -> p.player.team() == e.unit.team());
                 if(data != null) {
                     Marathon.respawn(data);
-                    if(data.config.getInt("score", 0) > 0 && e.unit.type() != UnitTypes.crawler) Marathon.updateScore(data, -(int)(data.config.getInt("score", 0) * 0.1f));
-                    else if(e.unit.type() == UnitTypes.crawler) {
-                        Groups.unit.each(u -> u.team() != Team.sharded && u.team() != Team.derelict, u -> {
-                            data.config.put("score", data.config.getInt("score", 0) + u.health());
-                            u.health(0);
-                        });
-                    }
+                    if(data.config.getInt("score", 0) > 0) Marathon.updateScore(data, -(int)(data.config.getInt("score", 0) * 0.1f));
                 }
             }
         });
