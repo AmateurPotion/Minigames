@@ -78,6 +78,7 @@ public class Database {
         Events.on(EventType.UnitUnloadEvent.class, e -> runSkill(EventType.UnitUnloadEvent.class, e, e.unit.team(), e.unit.type(), getPlayer(e.unit.team())));
         Events.on(EventType.UnitChangeEvent.class, e -> runSkill(EventType.UnitChangeEvent.class, e, e.unit.team(), e.unit.type(), e.player));
         Events.on(EventList.MarathonLineArrivalEvent.class, e -> runSkill(EventList.MarathonLineArrivalEvent.class, e, e.player().team(), e.unit().type(), e.player()));
+        Events.on(EventList.SkillReuseEvent.class, e -> runSkill(e.type(), e.arg(), e.skill().team(), e.skill().unitType(), getPlayer(e.skill().team())));
     }
 
     private <T> void runSkill(Class<T> event, T arg, Team team, UnitType type, Player player) {
@@ -146,7 +147,7 @@ public class Database {
     }
 
     public Player getPlayer(Team team) {
-        if(gameMode("solo")) {
+        if(gameMode("solo") && team != null) {
             return Groups.player.find(player -> player.team() == team);
         } else {
             return null;

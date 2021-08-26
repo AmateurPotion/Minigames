@@ -71,4 +71,8 @@ public class PlayerData {
     public void addPoint(int point) {
         config.put("point", this.point() + point);
     }
+
+    public boolean isReady(String name) {
+        return coolTimes.get(name) == 0;
+    }
 }
