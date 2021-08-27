@@ -5,6 +5,7 @@ import arc.Events;
 import arc.struct.Seq;
 import arc.util.Log;
 import mindustry.Vars;
+import mindustry.content.StatusEffects;
 import mindustry.content.UnitTypes;
 import mindustry.game.EventType;
 import mindustry.game.Team;

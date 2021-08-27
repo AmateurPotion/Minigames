@@ -2,6 +2,7 @@ package minigames.modes.marathon;
 
 import arc.Core;
 import arc.math.geom.Position;
+import mindustry.Vars;
 import mindustry.content.UnitTypes;
 import mindustry.entities.abilities.ShieldRegenFieldAbility;
 import mindustry.game.Gamemode;

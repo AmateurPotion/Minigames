@@ -78,12 +78,19 @@ public class Database {
         Events.on(EventType.UnitUnloadEvent.class, e -> runSkill(EventType.UnitUnloadEvent.class, e, e.unit.team(), e.unit.type(), getPlayer(e.unit.team())));
         Events.on(EventType.UnitChangeEvent.class, e -> runSkill(EventType.UnitChangeEvent.class, e, e.unit.team(), e.unit.type(), e.player));
         Events.on(EventList.MarathonLineArrivalEvent.class, e -> runSkill(EventList.MarathonLineArrivalEvent.class, e, e.player().team(), e.unit().type(), e.player()));
-        Events.on(EventList.SkillReuseEvent.class, e -> runSkill(e.type(), e.arg(), e.skill().team(), e.skill().unitType(), getPlayer(e.skill().team())));
     }
 
     private <T> void runSkill(Class<T> event, T arg, Team team, UnitType type, Player player) {
         skills.<Skill<T>>each(skill -> (skill.team() == null || skill.team() == team) && (skill.unitType() == null || skill.unitType() == type) && skill.entry() == event, skill -> skill.listener().get(arg));
         players.each(data -> data.player == player, playerData -> playerData.skillSet.<Skill<T>>each(skill -> skill.entry() == event, skill -> skill.listener().get(arg)));
+    }
+
+    public <T> Skill<T> skill(String name) {
+        if(skills.contains(skill -> Objects.equals(skill.name(), name))) {
+            return (Skill<T>) skills.find(skill -> skill.name() == name);
+        } else {
+            return null;
+        }
     }
 
     public void savePlayerData(PlayerData data) {

@@ -92,7 +92,7 @@ public class UnitSkills implements ContentList {
                 if(e.unit == Nulls.unit && target != null && target.type() == UnitTypes.fortress) {
                     target.healthMultiplier(10);
                     target.apply(StatusEffects.unmoving, Float.MAX_VALUE);
-                    db.find(e.player).config.put("shellingMode@NS", true);
+                    db.find(e.player).config.put("bombing@NS", true);
                     Call.announce(e.player.con, db.bundle.getString(e.player, "marathon.skill.shelling.on"));
                 }
             }
@@ -102,18 +102,17 @@ public class UnitSkills implements ContentList {
                 e.unit.healthMultiplier(1);
                 e.unit.unapply(StatusEffects.unmoving);
                 e.unit.apply(StatusEffects.unmoving, 5);
-                db.find(e.player).config.put("shellingMode@NS", false);
+                db.find(e.player).config.put("bombing@NS", false);
                 Call.announce(e.player.con, db.bundle.getString(e.player, "marathon.skill.shelling.off"));
             }
         }, null, UnitTypes.fortress),
-        shellingMode = new Skill<>(EventType.TapEvent.class, "shellingMode", e -> {
-            if(db.gameMode("marathon") && db.find(e.player).config.getBool("shellingMode@NS", false)) {
-                PlayerData data = db.find(e.player);
+        bombing = new Skill<>(EventType.TapEvent.class, "bombing", e -> {
+            if(db.gameMode("marathon") && (db.find(e.player).config.getBool("bombing@NS", false) || db.find(e.player).config.getBool("bombing-repeat@NS", false))) {
                 Unit target = Groups.unit.find(u -> u.team() == e.player.team());
-                if(target.ammof() == 1) {
+                if(target != null && target.ammof() == 1) {
                     //target.ammo(0);
                     int range = 15, duration = 5;
-                    target.apply(StatusEffects.unmoving, duration + 6);
+                    target.apply(StatusEffects.unmoving, (duration + 6) * 100);
                     for(int i = -1; i < 2; i++) {
                         if(i != 0) {
                             Call.label("" + Iconc.statusBlasted, duration + 6, e.tile.getX() + (i * 8 * range), e.tile.getY());
@@ -146,7 +145,8 @@ public class UnitSkills implements ContentList {
                                             } else {
                                                 Log.info("reuse");
                                                 unit.health(0);
-                                                Events.fire(new EventList.SkillReuseEvent<>(EventType.TapEvent.class, db.skills.find(skill -> Objects.equals(skill.name(), "shellingMode")), e));
+                                                db.find(e.player).config.put("bombing-repeat@NS", true);
+                                                db.skill("bombing").listener().get(e);
                                             }
                                         });
                                     }
@@ -163,7 +163,7 @@ public class UnitSkills implements ContentList {
                 bigBang,
                 flash,
                 metaShield,
-                hardest, cancelHardest, shellingMode
+                hardest, cancelHardest, bombing
         );
 
         db.skills.addAll(skills);
