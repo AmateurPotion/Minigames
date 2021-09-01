@@ -1,23 +1,18 @@
-package minigames.events;
+package minigames.io;
 
-import arc.Core;
 import arc.Events;
-import arc.struct.Seq;
 import arc.util.Log;
-import mindustry.Vars;
-import mindustry.content.StatusEffects;
 import mindustry.content.UnitTypes;
 import mindustry.game.EventType;
 import mindustry.game.Team;
 import mindustry.gen.*;
 import mindustry.world.blocks.defense.Wall;
 import mindustry.world.blocks.storage.StorageBlock;
-import minigames.function.PlayerManager;
-import minigames.database.DataType.PlayerData;
+import minigames.utils.PlayerManager;
+import minigames.type.dataType.PlayerData;
 import minigames.modes.marathon.Marathon;
 
 import java.util.Objects;
-
 import static mindustry.Vars.content;
 import static mindustry.content.Blocks.coreShard;
 import static mindustry.content.Items.*;
@@ -68,6 +63,7 @@ public class EventLoader {
             db.players.add(new PlayerData(e.player));
             if(db.gameMode("marathon")) {
                 e.player.team(Team.derelict);
+                Log.info(e.player.locale());
                 Call.menu(e.player.con, db.menu.get("marathon_join"), "Welcome!",
                         db.bundle.getString(e.player, "marathon.join"), new String[][]{{db.bundle.getString(e.player, "marathon.join.b1"), db.bundle.getString(e.player, "marathon.join.b2")}});
             }

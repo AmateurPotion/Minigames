@@ -6,25 +6,26 @@ import arc.util.*;
 import arc.util.io.Streams;
 import mindustry.Vars;
 import mindustry.mod.*;
-import minigames.commands.CommandLoader;
+import minigames.io.PacketLoader;
+import minigames.io.commands.CommandLoader;
 import minigames.database.Database;
-import minigames.events.Backgrounds;
-import minigames.events.EventLoader;
-import minigames.function.TeamManager;
+import minigames.io.Backgrounds;
+import minigames.io.EventLoader;
+import minigames.utils.TeamManager;
 
 import java.io.InputStream;
 
 public class Entry extends Mod{
-    public static Database db;
+    public final static Database db = new Database();
     private final CommandLoader cLoader = new CommandLoader();
     private Backgrounds backgrounds;
 
     @Override
     public void init() {
         loadMap();
-        db = new Database();
         // loadEvent
         new EventLoader().load();
+        new PacketLoader().load();
         db.skillLoader.load();
         backgrounds = new Backgrounds();
 

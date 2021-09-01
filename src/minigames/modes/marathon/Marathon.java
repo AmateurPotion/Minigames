@@ -1,8 +1,6 @@
 package minigames.modes.marathon;
 
-import arc.Core;
 import arc.math.geom.Position;
-import mindustry.Vars;
 import mindustry.content.UnitTypes;
 import mindustry.entities.abilities.ShieldRegenFieldAbility;
 import mindustry.game.Gamemode;
@@ -11,9 +9,8 @@ import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Unit;
 import mindustry.maps.Map;
-import minigames.Entry;
-import minigames.database.DataType.PlayerData;
-import minigames.function.PlayerManager;
+import minigames.type.dataType.PlayerData;
+import minigames.utils.PlayerManager;
 
 import java.util.Objects;
 import java.util.Random;
@@ -23,6 +20,7 @@ import static mindustry.Vars.netServer;
 import static minigames.Entry.db;
 
 public class Marathon {
+    private static Random random = new Random();
     public static PlayerData[] scoreboard = new PlayerData[3];
     public static Position start1 = new Position() {
         @Override
@@ -108,9 +106,19 @@ public class Marathon {
 
     public static void respawn(PlayerData data) {
         if(db.gameMode("marathon")) {
+            int r = random.nextInt(100);
+            data.config.asObject().forEach(e -> {
+                if(e.key.contains("@DR")) {
+                    data.config.remove(e.key);
+                }
+            });
+            data.skillSet.each(skill -> skill.name().contains("@DR"), data.skillSet::remove);
             Groups.unit.each(u -> u.team() == data.player.team(), Call::unitDespawn);
             PlayerManager.changeUnit(data.player, content.units().copy().filter(u -> (u != UnitTypes.omura || data.config.getInt("score", 0) < 10000) && u != UnitTypes.block).random());
             home(data);
+            if(r > 30) {
+                data.skillSet.add(db.skill("missileShots").imitation(null, null, "@DR"));
+            }
         }
     }
 
