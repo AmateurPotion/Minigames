@@ -2,30 +2,26 @@ package minigames.database;
 
 import arc.Events;
 import arc.files.Fi;
-import arc.func.Cons;
-import arc.struct.IntMap;
 import arc.struct.Seq;
-import arc.util.Log;
 import arc.util.Nullable;
 import arc.util.serialization.Jval;
 import mindustry.Vars;
 import mindustry.game.EventType;
 import mindustry.game.Team;
-import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.gen.Unit;
-import mindustry.net.NetConnection;
 import mindustry.type.UnitType;
-import mindustry.ui.Menus;
-import minigames.database.DataType.PlayerData;
-import minigames.ctype.Skill;
-import minigames.events.EventList;
-import minigames.function.MenuManager;
+import minigames.type.dataType.PlayerData;
+import minigames.type.ctype.Skill;
+import minigames.io.EventList;
+import minigames.utils.MenuManager;
 import minigames.modes.marathon.skills.UnitSkills;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Objects;
+import java.util.ResourceBundle;
 
 import static arc.util.Log.err;
 
@@ -78,11 +74,15 @@ public class Database {
         Events.on(EventType.UnitUnloadEvent.class, e -> runSkill(EventType.UnitUnloadEvent.class, e, e.unit.team(), e.unit.type(), getPlayer(e.unit.team())));
         Events.on(EventType.UnitChangeEvent.class, e -> runSkill(EventType.UnitChangeEvent.class, e, e.unit.team(), e.unit.type(), e.player));
         Events.on(EventList.MarathonLineArrivalEvent.class, e -> runSkill(EventList.MarathonLineArrivalEvent.class, e, e.player().team(), e.unit().type(), e.player()));
+        Events.on(EventList.BindingReceiveEvent.class, e -> runSkill(EventList.BindingReceiveEvent.class, e, e.player().team(), e.player().unit() != null ? e.player().unit().type() : null, e.player()));
     }
 
     private <T> void runSkill(Class<T> event, T arg, Team team, UnitType type, Player player) {
-        skills.<Skill<T>>each(skill -> (skill.team() == null || skill.team() == team) && (skill.unitType() == null || skill.unitType() == type) && skill.entry() == event, skill -> skill.listener().get(arg));
-        players.each(data -> data.player == player, playerData -> playerData.skillSet.<Skill<T>>each(skill -> skill.entry() == event, skill -> skill.listener().get(arg)));
+        skills.<Skill<T>>each(skill -> (skill.team() == null || skill.team() == team) && (skill.unitType() == null || skill.unitType() == type) && skill.entry() == event,
+                skill -> skill.listener().get(arg));
+        players.each(data -> data.player == player,
+                playerData -> playerData.skillSet.<Skill<T>>each(skill -> skill.entry() == event,
+                        skill -> skill.listener().get(arg)));
     }
 
     public <T> Skill<T> skill(String name) {
@@ -91,6 +91,42 @@ public class Database {
         } else {
             return null;
         }
+    }
+
+    public Seq<String> currentSkills(PlayerData data) {
+        Seq<String> tags = Seq.with("@NS", "@DR", "#");
+        Seq<String> skillList = Seq.with();
+        Team tc = data.player.team();
+        UnitType utc = getPlayerUnitType(data.player.team());
+
+        data.skillSet.each(skill -> {
+            String[] skillName = new String[]{skill.name()};
+            tags.each(tag -> {
+                skillName[0] = skillName[0].replaceAll(tag, "");
+            });
+            if(!skillList.contains(skillName[0]) && !skillName[0].contains("@ND")) {
+                skillList.add(skillName[0]);
+            }
+        });
+        skills.each(skill -> (utc != null && skill.unitType() == utc) || skill.team() == tc, skill -> {
+            String[] skillName = new String[]{skill.name()};
+            tags.each(tag -> {
+                skillName[0] = skillName[0].replaceAll(tag, "");
+            });
+            if(!skillList.contains(skillName[0])) {
+                skillList.add(skillName[0]);
+            }
+        });
+
+        return skillList;
+    }
+
+    public String skillDescription(String skillName, Locale locale) {
+        ResourceBundle b = bundle.bundle(locale);
+        if (b == null) {
+            b = bundle.bundle(Locale.getDefault());
+        }
+        return b.getString("skill." + skillName + ".description");
     }
 
     public void savePlayerData(PlayerData data) {
