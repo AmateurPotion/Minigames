@@ -1,10 +1,9 @@
 package minigames.modes.marathon.skills;
 
-import arc.Events;
 import arc.graphics.Color;
+import arc.math.Mathf;
 import arc.struct.Seq;
 import arc.util.Log;
-import arc.util.Time;
 import arc.util.Timer;
 import mindustry.content.*;
 import mindustry.ctype.ContentList;
@@ -12,13 +11,11 @@ import mindustry.game.EventType;
 import mindustry.game.Team;
 import mindustry.gen.*;
 import mindustry.gen.Nulls;
-import minigames.ctype.Skill;
-import minigames.database.DataType.PlayerData;
-import minigames.events.EventList;
-import minigames.function.PlayerManager;
+import minigames.type.ctype.Skill;
+import minigames.type.dataType.PlayerData;
+import minigames.utils.PlayerManager;
 import minigames.modes.marathon.Marathon;
 
-import java.util.Objects;
 import java.util.Random;
 
 import static minigames.Entry.db;
@@ -91,26 +88,25 @@ public class UnitSkills implements ContentList {
                 Unit target = Groups.unit.find(u -> u.team() == e.player.team());
                 if(e.unit == Nulls.unit && target != null && target.type() == UnitTypes.fortress) {
                     target.healthMultiplier(10);
-                    target.apply(StatusEffects.unmoving, Float.MAX_VALUE);
-                    db.find(e.player).config.put("bombing@NS", true);
-                    Call.announce(e.player.con, db.bundle.getString(e.player, "marathon.skill.shelling.on"));
+                    target.apply(StatusEffects.unmoving, 3);
+                    db.find(e.player).config.put("bombing@NS@DR", true);
+                    Call.announce(e.player.con, db.bundle.getString(e.player, "skill.bombing.on"));
                 }
             }
         }, null, null),
-        cancelHardest = new Skill<>(EventType.UnitChangeEvent.class, "cancelHardest", e -> {
+        cancelHardest = new Skill<>(EventType.UnitChangeEvent.class, "cancelHardest@ND", e -> {
             if(db.gameMode("marathon")) {
                 e.unit.healthMultiplier(1);
-                e.unit.unapply(StatusEffects.unmoving);
                 e.unit.apply(StatusEffects.unmoving, 5);
-                db.find(e.player).config.put("bombing@NS", false);
-                Call.announce(e.player.con, db.bundle.getString(e.player, "marathon.skill.shelling.off"));
+                db.find(e.player).config.put("bombing@NS@DR", false);
+                Call.announce(e.player.con, db.bundle.getString(e.player, "skill.bombing.off"));
             }
         }, null, UnitTypes.fortress),
         bombing = new Skill<>(EventType.TapEvent.class, "bombing", e -> {
-            if(db.gameMode("marathon") && (db.find(e.player).config.getBool("bombing@NS", false) || db.find(e.player).config.getBool("bombing-repeat@NS", false))) {
+            if(db.gameMode("marathon") && (db.find(e.player).config.getBool("bombing@NS@DR", false) || db.find(e.player).config.getBool("bombing-repeat@NS@DR", false))) {
                 Unit target = Groups.unit.find(u -> u.team() == e.player.team());
                 if(target != null && target.ammof() == 1) {
-                    //target.ammo(0);
+                    target.ammo(0);
                     int range = 15, duration = 5;
                     target.apply(StatusEffects.unmoving, (duration + 6) * 100);
                     for(int i = -1; i < 2; i++) {
@@ -141,11 +137,11 @@ public class UnitSkills implements ContentList {
                                             unit.damageMultiplier(unit.damageMultiplier() * 2);
                                             unit.healthMultiplier(unit.healthMultiplier() / 2);
                                             if(unit.health() > 100) {
-                                                unit.health(unit.health() - 100);
+                                                unit.health(unit.health() - 150);
                                             } else {
                                                 Log.info("reuse");
                                                 unit.health(0);
-                                                db.find(e.player).config.put("bombing-repeat@NS", true);
+                                                db.find(e.player).config.put("bombing-repeat@NS@DR", true);
                                                 db.skill("bombing").listener().get(e);
                                             }
                                         });
@@ -156,14 +152,37 @@ public class UnitSkills implements ContentList {
                     }, duration, 2, 2);
                 }
             }
-        }, null, null);
+        }, null, null),
+        missileShots = new Skill<>(EventType.TapEvent.class, "missileShots", e -> {
+            if(db.gameMode("marathon") && Groups.player.size() > 1) {
+                if(Groups.unit.contains(u -> u != e.player.unit() && u.dst(e.tile.worldx(), e.tile.worldy()) <= 12 * 8f)) return;
+                Seq<Unit> seq = Groups.unit.copy(new Seq<>()).filter(u -> u != e.player.unit()).sort((u1, u2) -> Float.compare(u1.dst(e.player.x, e.player.y),u2.dst(e.player.x, e.player.y)));
+                seq.reverse();
+                float ux = seq.peek().x;
+                float uy = seq.peek().y;
+                float tx = e.tile.worldx();
+                float ty = e.tile.worldy();
+                float px = e.player.x;
+                float py = e.player.y;
+
+                float centerx = (ux + tx + px) / 3;
+                float centery = (uy + ty + py) / 3;
+
+                for(int i = 0; i < 360; i += Mathf.random(12, 30)){
+                            e.player.unit().heal(-0.01f * e.player.unit().healthf() * i);
+                            Call.createBullet(Bullets.missileIncendiary, e.player.team(), centerx, centery,
+                                    Mathf.pow(Mathf.pi, Mathf.E) * i * i * Mathf.random(2, 5), 0, i * Mathf.pow(Mathf.pi, Mathf.E) / 5000f,i/100f);
+                        }
+                    }
+                }, Team.derelict, null);
 
         Seq<Skill<?>> skills = Seq.with(
                 cryoShots, cryoShots.imitation(UnitTypes.aegires),
                 bigBang,
                 flash,
                 metaShield,
-                hardest, cancelHardest, bombing
+                hardest, cancelHardest, bombing,
+                missileShots
         );
 
         db.skills.addAll(skills);

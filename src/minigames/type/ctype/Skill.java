@@ -1,14 +1,16 @@
-package minigames.ctype;
+package minigames.type.ctype;
 
 import arc.func.Cons;
+import arc.struct.Seq;
+import arc.util.Log;
 import mindustry.game.Team;
-import mindustry.gen.Unit;
 import mindustry.type.UnitType;
 
 import java.util.HashMap;
 
 public record Skill<T>(Class<T> entry, String name, Cons<T> listener, Team team, UnitType unitType) {
-    private static final HashMap<String, Integer> names = new HashMap<>();
+    private static final HashMap<String, Integer> intTags = new HashMap<>();
+    private static final HashMap<String, Seq<String>> tags = new HashMap<>();
 
     public static <T> Skill<T> constructor(Class<T> entry, String name, Cons<T> listener) {
         return new Skill<>(entry, name, listener, null, null);
@@ -40,14 +42,31 @@ public record Skill<T>(Class<T> entry, String name, Cons<T> listener, Team team,
 
     public Skill<T> imitation(Team team, UnitType type) {
         int num;
-        if(names.get(name) == null) {
-            names.put(name, 0);
+        if(intTags.get(name) == null) {
+            intTags.put(name, 0);
             num = 0;
         } else {
-            num = names.get(name) + 1;
-            names.put(name, num);
+            num = intTags.get(name) + 1;
+            intTags.put(name, num);
         }
-
         return new Skill<>(entry, name + "#" + num, listener, team, type);
+    }
+
+    public Skill<T> imitation(Team team, UnitType type, String customTag) {
+        if(intTags.containsKey(customTag) && getTags(name).contains(customTag)) {
+            Log.info("The tag is not available. Tag : " + customTag);
+            return this;
+        } else {
+            return new Skill<>(entry, name + "#" + customTag, listener, team, type);
+        }
+    }
+
+    public Seq<String> getTags(String skillName) {
+        if(tags.containsKey(skillName)) {
+            return tags.get(skillName);
+        } else {
+            tags.put(skillName, Seq.with());
+            return Seq.with();
+        }
     }
 }

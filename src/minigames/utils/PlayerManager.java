@@ -1,10 +1,7 @@
-package minigames.function;
+package minigames.utils;
 
-import arc.Core;
-import arc.util.Log;
 import mindustry.Vars;
 import mindustry.content.StatusEffects;
-import mindustry.game.Team;
 import mindustry.gen.Call;
 import mindustry.gen.Player;
 import mindustry.gen.Unit;

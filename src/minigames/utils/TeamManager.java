@@ -1,4 +1,4 @@
-package minigames.function;
+package minigames.utils;
 
 import arc.struct.Seq;
 import arc.util.Log;
