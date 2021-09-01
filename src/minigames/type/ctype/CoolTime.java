@@ -1,4 +1,4 @@
-package minigames.ctype;
+package minigames.type.ctype;
 
 import java.util.HashMap;
 

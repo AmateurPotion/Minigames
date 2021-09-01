@@ -1,4 +1,4 @@
-package minigames.ctype;
+package minigames.type.ctype;
 
 public record Challenge(String name) {
 }

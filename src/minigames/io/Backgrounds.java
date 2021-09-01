@@ -1,6 +1,5 @@
-package minigames.events;
+package minigames.io;
 
-import arc.Core;
 import arc.Events;
 import arc.util.Timer;
 import mindustry.Vars;
@@ -9,8 +8,7 @@ import mindustry.game.Team;
 import mindustry.gen.BlockUnitc;
 import mindustry.gen.Groups;
 import mindustry.world.Tile;
-import minigames.Entry;
-import minigames.database.DataType.PlayerData;
+import minigames.type.dataType.PlayerData;
 import minigames.modes.marathon.Marathon;
 
 import static minigames.Entry.db;

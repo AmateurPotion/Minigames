@@ -1,9 +1,8 @@
-package minigames.ctype;
+package minigames.type.ctype;
 
 import arc.graphics.Color;
 import mindustry.Vars;
 import mindustry.game.Team;
-import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.net.NetConnection;

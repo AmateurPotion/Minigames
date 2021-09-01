@@ -1,12 +1,13 @@
-package minigames.function;
+package minigames.utils;
 
+import arc.struct.IntMap;
 import arc.struct.Seq;
 import arc.util.Log;
 import mindustry.game.Team;
 import mindustry.gen.Call;
 import mindustry.gen.Player;
 import mindustry.ui.Menus;
-import minigames.database.DataType.PlayerData;
+import minigames.type.dataType.PlayerData;
 import minigames.modes.marathon.Marathon;
 
 import java.util.HashMap;
@@ -14,6 +15,7 @@ import java.util.HashMap;
 import static minigames.Entry.db;
 
 public class MenuManager {
+    private static final Menus menus = new Menus();
     private int tempMenuNum;
     private int menuNum;
     private final Seq<Integer> excep;
@@ -77,7 +79,19 @@ public class MenuManager {
     }
 
     public void sendTempMenu(Player player, String title, String message, String[][] options, Menus.MenuListener listener) {
-        Menus.registerMenu(tempMenuNum, listener);
+        int n = tempMenuNum;
+        Menus.MenuListener ml = (p, option) -> {
+            listener.get(p, option);
+            try {
+                IntMap<Menus.MenuListener> menuListeners = Synthesis.invokeT(menus, "menuListeners");
+                if(menuListeners != null) {
+                    menuListeners.remove(n);
+                }
+            } catch (NoSuchFieldException | IllegalAccessException e) {
+                Log.info(e.getLocalizedMessage());
+            }
+        };
+        Menus.registerMenu(tempMenuNum, ml);
         Call.menu(player.con, tempMenuNum, title, message, options);
         tempMenuNum--;
     }

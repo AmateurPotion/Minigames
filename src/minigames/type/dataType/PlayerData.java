@@ -1,10 +1,10 @@
-package minigames.database.DataType;
+package minigames.type.dataType;
 
 import arc.struct.Seq;
 import arc.util.serialization.Jval;
 import mindustry.gen.Player;
-import minigames.ctype.CoolTime;
-import minigames.ctype.Skill;
+import minigames.type.ctype.CoolTime;
+import minigames.type.ctype.Skill;
 
 import java.util.Objects;
 
@@ -27,22 +27,15 @@ public class PlayerData {
         config = Objects.requireNonNullElseGet(db.getPlayerData(player.uuid()), Jval::newObject);
         coolTimes = new CoolTime();
 
-        // load
-        Jval.JsonArray tempSkillSet;
+        // configuration
+
         if(config.get("skillSet") != null) {
-            tempSkillSet = config.get("skillSet").asArray();
-            tempSkillSet.each(skill -> {
-                Skill<?> s = originalSkills.find(os -> Objects.equals(os.name(), skill.toString()));
-                if(s != null) {
-                    skillSet.add(s);
-                }
-            });
+            originalSkills.each(skill -> config.get("skillSet").asArray().contains(val -> Objects.equals(val.toString(), skill.name())), skillSet::add);
         }
         config.remove("skillSet");
 
         configCheck("name", player.name());
         configCheck("permission level", 0);
-        configCheck("point", 0);
         configCheck("score", 0);
         configCheck("line@NS", 1);
     }
@@ -62,14 +55,6 @@ public class PlayerData {
 
     public void permissionLevel(int level) {
         config.put("permission level", level);
-    }
-
-    public int point() {
-        return config.getInt("point", 0);
-    }
-
-    public void addPoint(int point) {
-        config.put("point", this.point() + point);
     }
 
     public boolean isReady(String name) {

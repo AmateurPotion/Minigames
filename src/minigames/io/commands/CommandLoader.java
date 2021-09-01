@@ -1,25 +1,26 @@
-package minigames.commands;
+package minigames.io.commands;
 
 import arc.Core;
-import arc.Events;
+import arc.func.Cons2;
+import arc.struct.ObjectMap;
+import arc.struct.Seq;
 import arc.util.CommandHandler;
 import arc.util.Log;
-import mindustry.content.UnitTypes;
+import mindustry.Vars;
 import mindustry.core.GameState;
-import mindustry.game.EventType;
 import mindustry.game.Team;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
-import mindustry.gen.Unit;
+import mindustry.gen.UnitCommandCallPacket;
+import mindustry.net.NetConnection;
 import mindustry.type.UnitType;
-import mindustry.ui.Menus;
-import minigames.ctype.Character;
-import minigames.database.DataType.PlayerData;
-import minigames.function.PlayerManager;
-import minigames.function.TeamManager;
+import minigames.type.dataType.PacketListener;
+import minigames.type.dataType.PlayerData;
+import minigames.utils.*;
 import minigames.modes.marathon.Marathon;
 
+import java.util.MissingResourceException;
 import java.util.Objects;
 
 import static arc.util.Log.err;
@@ -118,7 +119,10 @@ public class CommandLoader {
         });
 
         handler.register("saveAll", "", args -> {
-            db.players.each(db::savePlayerData);
+            db.players.each( data -> {
+                Log.info("save data - " + data.player.name());
+                db.savePlayerData(data);
+            });
         });
 
         handler.register("perm", "<name> <level>", "", args -> {
@@ -130,6 +134,10 @@ public class CommandLoader {
             } else if(args.length == 1) {
                 Log.info(db.find(args[0]).permissionLevel());
             }
+        });
+
+        handler.register("test", "", args -> {
+            
         });
     }
 
@@ -167,6 +175,36 @@ public class CommandLoader {
         handler.<Player>register("scoreboard", "open scoreboard", (args, player) -> {
             if(db.gameMode("marathon")) {
                 Call.infoMessage(player.con, Marathon.scoreboard());
+            }
+        });
+
+        handler.<Player>register("skills", "open skill info", (args, player) -> {
+            PlayerData data = db.find(player);
+            if(data != null) {
+                Seq<String> skills = db.currentSkills(data);
+                if (skills.size > 0) {
+                    String[] skillList = new String[]{""};
+                    try {
+                        Seq<String> tNames = Seq.with();
+                        skills.each(name -> tNames.add(db.bundle.getString(player, "skill." + name + ".name")));
+                        tNames.each(name -> skillList[0] += name + "\n");
+                        db.menu.sendTempMenu(player, db.bundle.getString(player, "skill.status.title"), skillList[0], new String[][]{tNames.toArray()}, (p, option) -> {
+                            Call.menu(p.con(), 0, db.bundle.getString(p, "skill." + skills.get(option) + ".name"), db.bundle.getString(p, "skill." + skills.get(option) + ".description"), new String[][]{{db.bundle.getString(p, "ok")}});
+                        });
+                    } catch (MissingResourceException e) {
+                        Log.info(e.getLocalizedMessage());
+                    }
+                }
+            }
+        });
+
+        handler.<Player>register("skill", "<skillName>", "open skill info", (args, player) -> {
+            if(args.length == 1) {
+                try {
+                    Call.menu(player.con(), 0, db.bundle.getString(player, "skill." + args[0] + ".name"), db.bundle.getString(player, "skill." + args[0] + ".description"), new String[][]{{db.bundle.getString(player, "ok")}});
+                } catch (MissingResourceException e) {
+                    Log.info(e.getLocalizedMessage());
+                }
             }
         });
     }
