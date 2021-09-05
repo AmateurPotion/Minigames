@@ -30,7 +30,7 @@ public class Bundle {
         return bundles.find(b -> b.getLocale() == locale);
     }
 
-    public String getString(String locale, String key) {
+    public String getString(@NotNull String locale, @NotNull String key) {
         if(localeMap.get(locale) != null && bundles.contains(bundle -> localeMap.get(locale) == bundle.getLocale())) {
             return bundle(localeMap.get(locale)).getString(key);
         } else {
@@ -39,10 +39,20 @@ public class Bundle {
     }
 
     public String getString(@NotNull Player player, @NotNull String key) {
-        if(localeMap.get(player.locale()) != null && bundles.contains(bundle -> localeMap.get(player.locale()) == bundle.getLocale())) {
-            return bundle(localeMap.get(player.locale())).getString(key);
-        } else {
-            return bundle(Locale.getDefault()).getString(key);
+        return getString(player.locale(), key);
+    }
+
+    public String getString(@NotNull String locale, @NotNull String key, @NotNull String... args) {
+        String result = getString(locale, key);
+        for(int i = 0; i < args.length; i++) {
+            if(result.contains("{" + i + "}")) {
+                result = result.replaceAll("\\{" + i + "}", args[i]);
+            }
         }
+        return result;
+    }
+
+    public String getString(@NotNull Player player, @NotNull String key, @NotNull String... args) {
+        return getString(player.locale(), key, args);
     }
 }
