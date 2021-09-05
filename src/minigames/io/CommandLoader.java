@@ -1,4 +1,4 @@
-package minigames.io.commands;
+package minigames.io;
 
 import arc.Core;
 import arc.func.Cons2;
@@ -162,6 +162,11 @@ public class CommandLoader {
             }
         });
 
+        handler.<Player>register("refine", "refine 50% of your point to items", (arg, player) -> {
+            PlayerData data = db.find(player);
+            ContentManager.refineScore(data);
+        });
+
         handler.<Player>register("respawn", "respawn", (args, player) -> {
             if(player.team() != Team.derelict && db.gameMode("marathon")) {
                 PlayerData data = db.players.find(p -> p.player == player);
@@ -206,6 +211,27 @@ public class CommandLoader {
                     Log.info(e.getLocalizedMessage());
                 }
             }
+        });
+
+        handler.<Player>register("items", "Open remaining item amount status", (arg, player) -> {
+            PlayerData data = db.find(player);
+            String[] message = new String[]{"\n"};
+            int[] t = new int[]{0};
+            data.items().forEach((item, prop) -> {
+                if(t[0] == 4) {
+                    t[0] = 0;
+                    message[0] += "\n";
+                }
+                if(t[0] != 0) {
+                    message[0] += "  |  ";
+                }
+                message[0] += Synthesis.findItemIcon(item) + " : [#" + item.color.toString() +"]" + prop.val + "[]";
+
+                t[0]++;
+            });
+            Call.menu(player.con(), 0, db.bundle.getString(player, "status.item.title"),
+                    message[0],
+                    new String[][]{{db.bundle.getString(player, "ok")}});
         });
     }
 

@@ -107,32 +107,23 @@ public class UnitSkills implements ContentList {
                 Unit target = Groups.unit.find(u -> u.team() == e.player.team());
                 if(target != null && target.ammof() == 1) {
                     target.ammo(0);
-                    int range = 15, duration = 5;
-                    target.apply(StatusEffects.unmoving, (duration + 6) * 100);
-                    for(int i = -1; i < 2; i++) {
-                        if(i != 0) {
-                            Call.label("" + Iconc.statusBlasted, duration + 6, e.tile.getX() + (i * 8 * range), e.tile.getY());
-                            Call.label("" + Iconc.statusBlasted, duration + 6, e.tile.getX(), e.tile.getY() + (i * 8 * range));
-                            for(int j = -1; j < 2; j++) {
-                                if(j != 0) {
-                                    float t = (float) Math.sqrt(range * range / 2);
-                                    Call.label("" + Iconc.statusBlasted, duration + 6, e.tile.getX() + (i * 8 * t), e.tile.getY() + (j * 8 * t));
-                                }
-                            }
-                        }
+                    int range = 15, coolDown = 5;
+                    target.apply(StatusEffects.unmoving, (coolDown + 6) * 100);
+                    for(int i = 0; i < 361; i = i + 3){
+                        Call.label("" + Iconc.statusBlasted, coolDown + 6, (float) (e.tile.getX() + Math.cos(i) * (range * 8)), (float) (e.tile.getY() + Math.sin(i) * (range * 8)));
                     }
-                    Call.label("[scarlet]" + Iconc.warning, duration + 6, e.tile.getX(), e.tile.getY());
+                    Call.label("[scarlet]" + Iconc.warning, coolDown + 6, e.tile.getX(), e.tile.getY());
                     new Timer().scheduleTask(new Timer.Task() {
                         @Override
                         public void run() {
                             new Timer().scheduleTask(new Timer.Task() {
                                 @Override
                                 public void run() {
-                                    int explodeRange = 2, rRange = range - explodeRange;
+                                    int explodeRange = 3, rRange = range - explodeRange;
                                     int sCount = 5 + random.nextInt(10);
                                     for(int i = 0; i < sCount; i++) {
                                         float x = e.tile.getX() + 8 * (random.nextInt(rRange * 2) - rRange), y = e.tile.getY() + 8 * (random.nextInt(rRange * 2) - rRange);
-                                        Call.effect(Fx.plasticExplosionFlak, x, y, 0, Color.red);
+                                        Call.effect(Fx.plasticExplosionFlak, x, y, 10, Color.red);
                                         Groups.unit.each(u -> u.dst(x, y) < explodeRange * 8, unit -> {
                                             unit.damageMultiplier(unit.damageMultiplier() * 2);
                                             unit.healthMultiplier(unit.healthMultiplier() / 2);
@@ -149,7 +140,7 @@ public class UnitSkills implements ContentList {
                                 }
                             }, 0, 0.2f, 2);
                         }
-                    }, duration, 2, 2);
+                    }, coolDown, 2, 2);
                 }
             }
         }, null, null),
@@ -176,15 +167,13 @@ public class UnitSkills implements ContentList {
                     }
                 }, Team.derelict, null);
 
-        Seq<Skill<?>> skills = Seq.with(
+        Seq.<Skill<?>>with(
                 cryoShots, cryoShots.imitation(UnitTypes.aegires),
                 bigBang,
                 flash,
                 metaShield,
                 hardest, cancelHardest, bombing,
                 missileShots
-        );
-
-        db.skills.addAll(skills);
+        ).each(db::registerSkill);
     }
 }

@@ -122,6 +122,12 @@ public class Marathon {
         }
     }
 
+    public static void updateScore(PlayerData data) {
+        if(data != null) {
+            Call.setHudText(data.player.con, "score : " + data.config.getInt("score", 0));
+        }
+    }
+
     public static void updateScore(PlayerData data, int variation) {
         if(db.gameMode("marathon") && data != null){
             int score = data.config.getInt("score", 0) + variation;

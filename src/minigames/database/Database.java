@@ -3,6 +3,8 @@ package minigames.database;
 import arc.Events;
 import arc.files.Fi;
 import arc.struct.Seq;
+import arc.util.ArcRuntimeException;
+import arc.util.Log;
 import arc.util.Nullable;
 import arc.util.serialization.Jval;
 import mindustry.Vars;
@@ -32,6 +34,7 @@ public class Database {
     public final Seq<Skill<?>> skills;
     public final MenuManager menu;
     public final Bundle bundle;
+    private final HashMap<String, Jval> channels;
     private final HashMap<String, Boolean> gameMode;
 
     public Database() {
@@ -44,6 +47,7 @@ public class Database {
         skillLoader = new UnitSkills();
         menu = new MenuManager();
         bundle = new Bundle();
+        channels = new HashMap<>();
 
         // game mode setup
         gameMode.put("shuffle", false);
@@ -131,18 +135,26 @@ public class Database {
 
     public void savePlayerData(PlayerData data) {
         Fi path = new Fi(databaseDirectory.path() + "/" + data.player.uuid().replaceAll("/", "_") + ".json");
-            Jval save = Jval.newObject();
-            Jval skillSet = Jval.newArray();
+        Jval save = Jval.newObject();
+        Jval skillSet = Jval.newArray();
 
-            data.config.asObject().forEach(e -> {
-                if(!e.key.contains("@NS")) {
-                    save.put(e.key, e.value);
-                }
-            });
-            data.skillSet.each(skill -> skillSet.add(skill.name()));
-            save.put("skillSet", skillSet);
+        // default values
+        data.config.asObject().forEach(e -> {
+            if(!e.key.contains("@NS")) {
+                save.put(e.key, e.value);
+            }
+        });
 
-            path.writeString(save.toString(Jval.Jformat.formatted), false);
+        // skills
+        data.skillSet.each(skill -> skillSet.add(skill.name()));
+        save.put("skillSet", skillSet);
+
+        // items
+        Jval items = Jval.newObject();
+        data.items().forEach((item, amount) -> items.put(item.name, amount.val));
+        save.put("items", items);
+
+        path.writeString(save.toString(Jval.Jformat.formatted), false);
     }
 
     public @Nullable Jval getPlayerData(String uuid) {
@@ -230,5 +242,34 @@ public class Database {
 
     public Seq<Skill<?>> unitSkills(UnitType type) {
         return skills.copy().filter(skill -> skill.team() == null && skill.unitType() == type);
+    }
+
+    public void loadDBChannel(Fi path) {
+        if(path.exists()) {
+            if(path.isDirectory()) {
+                path.findAll().each(fi -> {
+                    if(!fi.isDirectory() && fi.name().contains(".json")) {
+                        Jval channel = Jval.read(fi.reader());
+                        String channelName = fi.file().getName().replaceAll("\\.json", "");
+                        if(channel.isObject() && !channels.containsKey(channelName)) {
+                            channels.put(channelName, channel);
+                            Log.info(channelName);
+                        }
+                    } else if(fi.isDirectory()) {
+                        loadDBChannel(fi);
+                    }
+                });
+            } else {
+                try {
+                    Jval channel = Jval.read(path.reader());
+                    String channelName = path.file().getName().replaceAll("\\.json", "");
+                    if(channel.isObject() && !channels.containsKey(channelName)) {
+                        channels.put(channelName, channel);
+                    }
+                } catch (ArcRuntimeException e) {
+                    Log.info(e.getLocalizedMessage());
+                }
+            }
+        }
     }
 }

@@ -7,10 +7,11 @@ import arc.util.io.Streams;
 import mindustry.Vars;
 import mindustry.mod.*;
 import minigames.io.PacketLoader;
-import minigames.io.commands.CommandLoader;
+import minigames.io.CommandLoader;
 import minigames.database.Database;
 import minigames.io.Backgrounds;
 import minigames.io.EventLoader;
+import minigames.utils.Synthesis;
 import minigames.utils.TeamManager;
 
 import java.io.InputStream;
@@ -29,6 +30,12 @@ public class Entry extends Mod{
         db.skillLoader.load();
         backgrounds = new Backgrounds();
 
+        //
+        db.loadDBChannel(new Fi(db.databaseDirectory.path() + "/var/"));
+        // load icons
+        Synthesis.load();
+
+        // background init
         Timer shuffleTimer = new Timer();
         Timer.Task shuffleTask = new Timer.Task() {
             @Override

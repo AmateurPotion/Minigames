@@ -5,7 +5,7 @@ import org.jetbrains.annotations.NotNull;
 
 public class Property<T> {
     public T val;
-    public Jval jval;
+    public Jval jval; // json 오브젝트
 
     public Property(@NotNull T val, Jval jval) {
         this.val = val;

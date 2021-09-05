@@ -95,9 +95,14 @@ public class EventLoader {
                        case 1 -> PlayerManager.setPosition(e.player(), Marathon.start2.getX(), Marathon.start2.getY());
                        case 2 -> PlayerManager.setPosition(e.player(), Marathon.start3.getX(), Marathon.start3.getY());
                        case 3 -> PlayerManager.setPosition(e.player(), Marathon.start4.getX(), Marathon.start4.getY());
-                       case 4 -> PlayerManager.setPosition(e.player(), Marathon.start1.getX(), Marathon.start1.getY());
+                       case 4 -> {
+                           PlayerManager.setPosition(e.player(), Marathon.start1.getX(), Marathon.start1.getY());
+                           int refineChance = data.config.getInt("refineChance", 0) + 1;
+                           data.config.put("refineChance", refineChance);
+                           Call.infoToast(data.player.con(), db.bundle.getString(data.player, "refine.gainChance") + refineChance, 2);
+                       }
                    }
-                   int score = (int)(e.player().unit().health() * e.player().unit().ammof());
+                   int score = (int)(e.player().unit().health() * e.player().unit().ammof() * 2);
                    Marathon.updateScore(data, score);
                }
            }
