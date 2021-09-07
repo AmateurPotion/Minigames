@@ -23,7 +23,7 @@ public class ContentManager {
                 data.addConfigInt("score", -score);
                 data.addConfigInt("refineChance", -1);
                 result.each(s -> data.addItem(s.item, s.amount));
-                Marathon.updateScore(data);
+                db.gameMode(Marathon.class, "marathon").updateScore(data);
                 db.savePlayerData(data);
                 Call.infoToast(data.player.con(), db.bundle.getString(data.player, "refine.gainItems", message), 3);
             } else {

@@ -4,6 +4,7 @@ import arc.Events;
 import arc.files.Fi;
 import arc.struct.Seq;
 import arc.util.ArcRuntimeException;
+import arc.util.CommandHandler;
 import arc.util.Log;
 import arc.util.Nullable;
 import arc.util.serialization.Jval;
@@ -14,11 +15,17 @@ import mindustry.gen.Groups;
 import mindustry.gen.Player;
 import mindustry.gen.Unit;
 import mindustry.type.UnitType;
+import minigames.io.CommandLoader;
+import minigames.modes.GameMode;
+import minigames.modes.duel.Duel;
+import minigames.modes.marathon.Marathon;
+import minigames.modes.marathon.MarathonEvents;
+import minigames.modes.solo.Solo;
 import minigames.type.dataType.PlayerData;
 import minigames.type.ctype.Skill;
 import minigames.io.EventList;
 import minigames.utils.MenuManager;
-import minigames.modes.marathon.skills.UnitSkills;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 import java.util.Locale;
@@ -28,14 +35,15 @@ import java.util.ResourceBundle;
 import static arc.util.Log.err;
 
 public class Database {
-    public final UnitSkills skillLoader;
     public final Fi databaseDirectory;
     public final Seq<PlayerData> players;
     public final Seq<Skill<?>> skills;
     public final MenuManager menu;
     public final Bundle bundle;
+    public final HashMap<String, GameMode> gameMode;
+    public final CommandLoader cLoader = new CommandLoader();
     private final HashMap<String, Jval> channels;
-    private final HashMap<String, Boolean> gameMode;
+    private final NullGameMode nullMode = new NullGameMode();
 
     public Database() {
         // init
@@ -44,18 +52,17 @@ public class Database {
         players = Seq.with();
         skills = Seq.with();
         gameMode = new HashMap<>();
-        skillLoader = new UnitSkills();
         menu = new MenuManager();
         bundle = new Bundle();
         channels = new HashMap<>();
 
         // game mode setup
-        gameMode.put("shuffle", false);
-        gameMode.put("solo", false);
-        gameMode.put("marathon", false);
-        gameMode.put("duel", false);
-        gameMode.put("starlike", false);
-        gameMode.put("story", false);
+        GameMode marathon = new Marathon();
+        GameMode duel = new Duel();
+        GameMode solo = new Solo();
+        gameMode.put(marathon.name(), marathon);
+        gameMode.put(duel.name(), duel);
+        gameMode.put(solo.name(), solo);
     }
 
     public void loadSkillEvent() {
@@ -77,7 +84,7 @@ public class Database {
         Events.on(EventType.UnitCreateEvent.class, e -> runSkill(EventType.UnitCreateEvent.class, e, e.unit.team(), e.unit.type(), getPlayer(e.unit.team())));
         Events.on(EventType.UnitUnloadEvent.class, e -> runSkill(EventType.UnitUnloadEvent.class, e, e.unit.team(), e.unit.type(), getPlayer(e.unit.team())));
         Events.on(EventType.UnitChangeEvent.class, e -> runSkill(EventType.UnitChangeEvent.class, e, e.unit.team(), e.unit.type(), e.player));
-        Events.on(EventList.MarathonLineArrivalEvent.class, e -> runSkill(EventList.MarathonLineArrivalEvent.class, e, e.player().team(), e.unit().type(), e.player()));
+        Events.on(MarathonEvents.MarathonLineArrivalEvent.class, e -> runSkill(MarathonEvents.MarathonLineArrivalEvent.class, e, e.player().team(), e.unit().type(), e.player()));
         Events.on(EventList.BindingReceiveEvent.class, e -> runSkill(EventList.BindingReceiveEvent.class, e, e.player().team(), e.player().unit() != null ? e.player().unit().type() : null, e.player()));
     }
 
@@ -180,17 +187,24 @@ public class Database {
         return result;
     }
 
-    public boolean gameMode(String modeName) {
-        if(gameMode.get(modeName) != null) {
-            return gameMode.get(modeName);
+    public GameMode gameMode(String modeName) {
+        GameMode result = gameMode.get(modeName);
+        if(result != null) {
+            return result;
         } else {
             err("can't find mode : " + modeName);
-            return false;
+            return nullMode;
         }
     }
 
-    public void gameMode(String modeName, boolean active) {
-        gameMode.put(modeName, active);
+    public <T extends GameMode> T gameMode(Class<T> type, String modeName) {
+        GameMode result = gameMode.get(modeName);
+        if(result != null && result.getClass() == type) {
+            return (T) result;
+        } else {
+            err("can't find mode : " + modeName);
+            return null;
+        }
     }
 
     public PlayerData find(String playerName) {
@@ -202,7 +216,7 @@ public class Database {
     }
 
     public Player getPlayer(Team team) {
-        if(gameMode("solo") && team != null) {
+        if(gameMode("solo").isActive() && team != null) {
             return Groups.player.find(player -> player.team() == team);
         } else {
             return null;
@@ -210,7 +224,7 @@ public class Database {
     }
 
     public UnitType getPlayerUnitType(Team team) {
-        if(gameMode("solo")) {
+        if(gameMode("solo").isActive()) {
             Player p = Groups.player.find(player -> player.team() == team);
             if(p != null) {
                 Unit u = p.unit();
@@ -270,6 +284,35 @@ public class Database {
                     Log.info(e.getLocalizedMessage());
                 }
             }
+        }
+    }
+
+    private static class NullGameMode implements GameMode {
+        private final Jval config = Jval.newObject();
+
+        @Override
+        public boolean active() {
+            return false;
+        }
+
+        @Override
+        public void disable() {
+
+        }
+
+        @Override
+        public boolean isActive() {
+            return false;
+        }
+
+        @Override
+        public String name() {
+            return "null";
+        }
+
+        @Override
+        public @NotNull Jval config() {
+            return config;
         }
     }
 }

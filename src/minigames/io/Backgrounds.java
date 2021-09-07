@@ -8,11 +8,11 @@ import mindustry.game.Team;
 import mindustry.gen.BlockUnitc;
 import mindustry.gen.Groups;
 import mindustry.world.Tile;
+import minigames.modes.marathon.MarathonEvents;
 import minigames.type.dataType.PlayerData;
 import minigames.modes.marathon.Marathon;
 
 import static minigames.Entry.db;
-import static minigames.modes.marathon.Marathon.updateScore;
 
 public class Backgrounds {
     public static Timer background;
@@ -23,7 +23,8 @@ public class Backgrounds {
         checkTask = new Timer.Task() {
             @Override
             public void run() {
-                if(Vars.state.isPlaying() && db.gameMode("marathon")) {
+                Marathon mode = db.gameMode(Marathon.class, "marathon");
+                if(Vars.state.isPlaying() && mode.isActive()) {
                     db.players.each(data -> !data.config.getBool("joinAllow@NS", true), data -> {
                         data.coolTimes.proceed(0.5f);
                     });
@@ -32,10 +33,11 @@ public class Backgrounds {
                         Tile current = Vars.world.tile((int)(player.x / 8), (int)(player.y / 8));
                         if(current == null || current.floor() == Blocks.space) {
                             PlayerData data = db.players.find(d -> d.player == player);
-                            Marathon.home(data);
-                            updateScore(data, -(int)(data.config.getInt("score", 0) * 0.01f));
+                            mode.home(data);
+
+                            mode.updateScore(data, -(int)(data.config.getInt("score", 0) * 0.01f));
                         }
-                        else if(current.floor() == Blocks.sandWater || current.floor() == Blocks.dirt) Events.fire(new EventList.MarathonLineArrivalEvent(player, player.unit(), current));
+                        else if(current.floor() == Blocks.sandWater || current.floor() == Blocks.dirt) Events.fire(new MarathonEvents.MarathonLineArrivalEvent(player, player.unit(), current));
                     });
                 }
             }

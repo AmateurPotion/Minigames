@@ -11,6 +11,7 @@ import minigames.io.CommandLoader;
 import minigames.database.Database;
 import minigames.io.Backgrounds;
 import minigames.io.EventLoader;
+import minigames.modes.duel.Duel;
 import minigames.utils.Synthesis;
 import minigames.utils.TeamManager;
 
@@ -18,7 +19,7 @@ import java.io.InputStream;
 
 public class Entry extends Mod{
     public final static Database db = new Database();
-    private final CommandLoader cLoader = new CommandLoader();
+    public final static Duel duel = new Duel();
     private Backgrounds backgrounds;
 
     @Override
@@ -27,7 +28,6 @@ public class Entry extends Mod{
         // loadEvent
         new EventLoader().load();
         new PacketLoader().load();
-        db.skillLoader.load();
         backgrounds = new Backgrounds();
 
         //
@@ -40,7 +40,7 @@ public class Entry extends Mod{
         Timer.Task shuffleTask = new Timer.Task() {
             @Override
             public void run() {
-                if(db.gameMode("shuffle")) { // put teamShuffle false bool
+                if(db.gameMode("shuffle").isActive()) { // put teamShuffle false bool
                     TeamManager.shuffle();
                 }
             }
@@ -52,16 +52,16 @@ public class Entry extends Mod{
 
     @Override
     public void registerServerCommands(CommandHandler handler) {
-        cLoader.registerServerCommands(handler);
+        db.cLoader.registerServerCommands(handler);
     }
 
     @Override
     public void registerClientCommands(CommandHandler handler) {
-        cLoader.registerClientCommands(handler);
+        db.cLoader.registerClientCommands(handler);
     }
 
     private void loadMap() {
-        String[] mapList = new String[]{"4P.msav", "marathon.msav"};
+        String[] mapList = new String[]{"4P.msav", "marathon.msav", "arena-g.msav"};
         Fi mapDir = new Fi(Vars.dataDirectory.path() + "/maps", Vars.dataDirectory.type());
         for(String mapName : mapList) {
             Fi target = new Fi(mapDir.path() + "/" + mapName, mapDir.type());

@@ -1,21 +1,16 @@
 package minigames.io;
 
 import arc.Core;
-import arc.func.Cons2;
-import arc.struct.ObjectMap;
 import arc.struct.Seq;
 import arc.util.CommandHandler;
 import arc.util.Log;
-import mindustry.Vars;
 import mindustry.core.GameState;
 import mindustry.game.Team;
 import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Player;
-import mindustry.gen.UnitCommandCallPacket;
-import mindustry.net.NetConnection;
 import mindustry.type.UnitType;
-import minigames.type.dataType.PacketListener;
+import minigames.modes.GameMode;
 import minigames.type.dataType.PlayerData;
 import minigames.utils.*;
 import minigames.modes.marathon.Marathon;
@@ -26,11 +21,21 @@ import java.util.Objects;
 import static arc.util.Log.err;
 import static mindustry.Vars.*;
 import static minigames.Entry.db;
-import static minigames.modes.marathon.Marathon.updateScore;
 
 public class CommandLoader {
+    private CommandHandler serverHandler;
+    private CommandHandler clientHandler;
+
+    public CommandHandler server() {
+        return serverHandler;
+    }
+
+    public CommandHandler client() {
+        return clientHandler;
+    }
 
     public void registerServerCommands(CommandHandler handler) {
+        serverHandler = handler;
         handler.register("ts", "Team random shuffle",  args -> TeamManager.shuffle());
 
         handler.register("put", "<key> <value> <string/int/bool>", "set settings", args -> {
@@ -110,11 +115,12 @@ public class CommandLoader {
             }
         });
 
-        handler.register("marathon", "", args -> {
-            if(state.is(GameState.State.playing)){
-                err("Already hosting. Type 'stop' to stop hosting first.");
-            } else {
-                Marathon.startMarathon();
+        handler.register("active", "<gameMode>", "", args -> {
+            if(args.length == 1 && db.gameMode.containsKey(args[0])) {
+                GameMode mode = db.gameMode(args[0]);
+                if(!Objects.equals(mode.name(), "null") && mode.active()) {
+                    Log.info("start gameMode : " + mode.name());
+                }
             }
         });
 
@@ -142,11 +148,12 @@ public class CommandLoader {
     }
 
     public void registerClientCommands(CommandHandler handler) {
+        clientHandler = handler;
         handler.<Player>register("join", "Join to current game", (args, player) -> {
-            if(db.gameMode("marathon")) {
+            if(db.gameMode("marathon").isActive()) {
                 PlayerData data = db.players.find(p -> p.player == player);
                 if(data.config.getBool("joinAllow@NS", true)) {
-                    Marathon.playerJoin(data);
+                    db.gameMode(Marathon.class, "marathon").playerJoin(data);
                     data.config.put("joinAllow@NS", false);
                 }
                 Call.setHudText(player.con, "score : " + data.config.getInt("score", 0));
@@ -168,18 +175,18 @@ public class CommandLoader {
         });
 
         handler.<Player>register("respawn", "respawn", (args, player) -> {
-            if(player.team() != Team.derelict && db.gameMode("marathon")) {
+            if(player.team() != Team.derelict && db.gameMode("marathon").isActive()) {
                 PlayerData data = db.players.find(p -> p.player == player);
                 if(!data.config.getBool("joinAllow@NS", true)) {
-                    Marathon.respawn(data);
-                    updateScore(data, -200);
+                    db.gameMode(Marathon.class, "marathon").respawn(data);
+                    db.gameMode(Marathon.class, "marathon").updateScore(data, -200);
                 }
             }
         });
 
         handler.<Player>register("scoreboard", "open scoreboard", (args, player) -> {
-            if(db.gameMode("marathon")) {
-                Call.infoMessage(player.con, Marathon.scoreboard());
+            if(db.gameMode("marathon").isActive()) {
+                Call.infoMessage(player.con, db.gameMode(Marathon.class, "marathon").scoreboard());
             }
         });
 

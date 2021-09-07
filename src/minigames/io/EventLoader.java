@@ -1,6 +1,7 @@
 package minigames.io;
 
 import arc.Events;
+import arc.math.geom.Position;
 import arc.util.Log;
 import mindustry.content.UnitTypes;
 import mindustry.game.EventType;
@@ -8,6 +9,7 @@ import mindustry.game.Team;
 import mindustry.gen.*;
 import mindustry.world.blocks.defense.Wall;
 import mindustry.world.blocks.storage.StorageBlock;
+import minigames.modes.marathon.MarathonEvents;
 import minigames.utils.PlayerManager;
 import minigames.type.dataType.PlayerData;
 import minigames.modes.marathon.Marathon;
@@ -26,7 +28,6 @@ public class EventLoader {
         playerLeaveEvents();
         marathonLineArrivalEvents();
         unitDestroyEvents();
-        gameOverEvents();
 
         db.loadSkillEvent();
     }
@@ -61,7 +62,7 @@ public class EventLoader {
                 db.players.remove(data);
             }
             db.players.add(new PlayerData(e.player));
-            if(db.gameMode("marathon")) {
+            if(db.gameMode("marathon").isActive()) {
                 e.player.team(Team.derelict);
                 Log.info(e.player.locale());
                 Call.menu(e.player.con, db.menu.get("marathon_join"), "Welcome!",
@@ -72,7 +73,7 @@ public class EventLoader {
 
     public void playerLeaveEvents() {
         Events.on(EventType.PlayerLeave.class, e -> {
-            if(db.gameMode("marathon")) {
+            if(db.gameMode("marathon").isActive()) {
                 Groups.unit.each(unit -> unit.team() == e.player.team(), Call::unitDespawn);
                 PlayerData data = db.players.find(d -> d.player == e.player);
                 db.savePlayerData(data);
@@ -82,28 +83,27 @@ public class EventLoader {
     }
 
     public void marathonLineArrivalEvents() {
-        Events.on(EventList.MarathonLineArrivalEvent.class, e -> {
-            // TODO 중복되는 연산 삭제
-           if(db.gameMode("marathon")) {
+        Events.on(MarathonEvents.MarathonLineArrivalEvent.class, e -> {
+            Marathon mode = db.gameMode(Marathon.class, "marathon");
+            if(mode.isActive()) {
                int line = e.tile().x > 100 ? (e.tile().y > 100 ? 1 : 2) : (e.tile().y > 100 ? 4 : 3);
                PlayerData data = db.players.find(p -> p.player == e.player());
                if(line == data.config.getInt("line@NS", 1)) {
                    data.config.put("line@NS", line != 4 ? line + 1 : 1);
                    Groups.unit.each(u -> u.team() == e.player().team(), Call::unitDespawn);
                    PlayerManager.changeUnit(e.player(), content.units().copy().filter(u -> u != UnitTypes.block).random());
-                   switch (line) {
-                       case 1 -> PlayerManager.setPosition(e.player(), Marathon.start2.getX(), Marathon.start2.getY());
-                       case 2 -> PlayerManager.setPosition(e.player(), Marathon.start3.getX(), Marathon.start3.getY());
-                       case 3 -> PlayerManager.setPosition(e.player(), Marathon.start4.getX(), Marathon.start4.getY());
-                       case 4 -> {
-                           PlayerManager.setPosition(e.player(), Marathon.start1.getX(), Marathon.start1.getY());
-                           int refineChance = data.config.getInt("refineChance", 0) + 1;
-                           data.config.put("refineChance", refineChance);
-                           Call.infoToast(data.player.con(), db.bundle.getString(data.player, "refine.gainChance") + refineChance, 2);
-                       }
+
+                   Position start = mode.getStartPoint(line + 1);
+                   if(line == 4) {
+                       start = mode.getStartPoint(1);
+                       int refineChance = data.config.getInt("refineChance", 0) + 1;
+                       data.config.put("refineChance", refineChance);
+                       Call.infoToast(data.player.con(), db.bundle.getString(data.player, "refine.gainChance") + refineChance, 2);
                    }
+                   PlayerManager.setPosition(e.player(), start.getX(), start.getY());
+
                    int score = (int)(e.player().unit().health() * e.player().unit().ammof() * 2);
-                   Marathon.updateScore(data, score);
+                   mode.updateScore(data, score);
                }
            }
         });
@@ -111,19 +111,14 @@ public class EventLoader {
 
     public void unitDestroyEvents() {
         Events.on(EventType.UnitDestroyEvent.class, e -> {
-            if(db.gameMode("marathon")) {
+            Marathon mode = db.gameMode(Marathon.class, "marathon");
+            if(mode.isActive()) {
                 PlayerData data = db.players.find(p -> p.player.team() == e.unit.team());
                 if(data != null) {
-                    Marathon.respawn(data);
-                    if(data.config.getInt("score", 0) > 0) Marathon.updateScore(data, -(int)(data.config.getInt("score", 0) * 0.1f));
+                    mode.respawn(data);
+                    if(data.config.getInt("score", 0) > 0) mode.updateScore(data, -(int)(data.config.getInt("score", 0) * 0.1f));
                 }
             }
-        });
-    }
-
-    public void gameOverEvents() {
-        Events.on(EventType.GameOverEvent.class, e -> {
-            db.gameMode("marathon", false);
         });
     }
 }
