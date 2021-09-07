@@ -34,10 +34,11 @@ public class MenuManager {
         register("marathon_join", (player, option) -> {
             switch (option) {
                 case 0:
-                    if(db.gameMode("marathon")) {
+                    Marathon mode = db.gameMode(Marathon.class, "marathon");
+                    if(mode.isActive()) {
                         PlayerData data = db.players.find(p -> p.player == player);
                         if(data.config.getBool("joinAllow@NS", true)) {
-                            Marathon.playerJoin(data);
+                            mode.playerJoin(data);
                             data.config.put("joinAllow@NS", false);
                         }
                         Call.setHudText(player.con, "score : " + data.config.getInt("score", 0));

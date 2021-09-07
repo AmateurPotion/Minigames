@@ -1,7 +1,10 @@
 package minigames.modes.marathon;
 
 import arc.math.geom.Position;
+import arc.util.Log;
+import arc.util.serialization.Jval;
 import mindustry.content.UnitTypes;
+import mindustry.core.GameState;
 import mindustry.entities.abilities.ShieldRegenFieldAbility;
 import mindustry.game.Gamemode;
 import mindustry.game.Team;
@@ -9,89 +12,51 @@ import mindustry.gen.Call;
 import mindustry.gen.Groups;
 import mindustry.gen.Unit;
 import mindustry.maps.Map;
+import minigames.modes.GameMode;
 import minigames.type.dataType.PlayerData;
+import minigames.type.dataType.Pos;
 import minigames.utils.PlayerManager;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
 import java.util.Random;
 
+import static arc.util.Log.err;
 import static mindustry.Vars.*;
 import static mindustry.Vars.netServer;
 import static minigames.Entry.db;
 
-public class Marathon {
-    private static Random random = new Random();
-    public static PlayerData[] scoreboard = new PlayerData[3];
-    public static Position start1 = new Position() {
-        @Override
-        public float getX() {
-            return 15 * 8;
-        }
+public class Marathon implements GameMode {
+    public final Jval config;
+    public PlayerData[] scoreboard = new PlayerData[3];
+    private final MarathonCommands commands;
+    private final MarathonSkills skills;
+    private boolean active = false;
+    private final Random random = new Random();
+    private int[] xl, yl;
 
-        @Override
-        public float getY() {
-            return 134 * 8;
-        }
-    },
-            start2 = new Position() {
-                @Override
-                public float getX() {
-                    return 134 * 8;
-                }
-
-                @Override
-                public float getY() {
-                    return 134 * 8;
-                }
-            },
-            start3 = new Position() {
-                @Override
-                public float getX() {
-                    return 134 * 8;
-                }
-
-                @Override
-                public float getY() {
-                    return 15 * 8;
-                }
-            },
-            start4 = new Position() {
-                @Override
-                public float getX() {
-                    return 15 * 8;
-                }
-
-                @Override
-                public float getY() {
-                    return 15 * 8;
-                }
-            };
-
-    public static void startMarathon() {
-        content.units().find(unitType -> unitType == UnitTypes.dagger).abilities.add(new ShieldRegenFieldAbility(20f, 40f, 60f * 4, 60f));
-
-        logic.reset();
-        Map loadMap = maps.all().find(map -> Objects.equals(map.name(), "Marathon"));
-        world.loadMap(loadMap, loadMap.applyRules(Gamemode.survival));
-        state.rules = loadMap.applyRules(Gamemode.survival);
-        logic.play();
-        netServer.openServer();
-        db.gameMode("marathon", true);
-        db.gameMode("solo", true);
-
-        Team.sharded.core().health(Float.MAX_VALUE);
+    public Position getStartPoint(int lineNum) {
+        return new Pos(xl[lineNum], yl[lineNum]);
     }
 
-    public static void home(PlayerData data) {
-        switch (data.config.getInt("line@NS", 1)) {
-            case 1 -> PlayerManager.setPosition(data.player, Marathon.start1.getX(), Marathon.start1.getY());
-            case 2 -> PlayerManager.setPosition(data.player, Marathon.start2.getX(), Marathon.start2.getY());
-            case 3 -> PlayerManager.setPosition(data.player, Marathon.start3.getX(), Marathon.start3.getY());
-            case 4 -> PlayerManager.setPosition(data.player, Marathon.start4.getX(), Marathon.start4.getY());
-        }
+    public Marathon() {
+        config = Jval.newObject();
+        xl = new int[] {
+                15, 134, 134, 15
+        };
+        yl = new int[] {
+                134, 134, 15, 15
+        };
+        skills = new MarathonSkills();
+        commands = new MarathonCommands();
     }
 
-    public static void playerJoin(PlayerData data) {
+    public void home(PlayerData data) {
+        Position pos = getStartPoint(data.config.getInt("line@NS", 1) - 1);
+        PlayerManager.setPosition(data.player, pos.getX(), pos.getY());
+    }
+
+    public void playerJoin(PlayerData data) {
         Team t;
         while(true) {
             t = Team.all[3 + new Random().nextInt(252)];
@@ -104,8 +69,8 @@ public class Marathon {
         Call.unitControl(data.player, unit);
     }
 
-    public static void respawn(PlayerData data) {
-        if(db.gameMode("marathon")) {
+    public void respawn(PlayerData data) {
+        if(active) {
             int r = random.nextInt(100);
             data.config.asObject().forEach(e -> {
                 if(e.key.contains("@DR")) {
@@ -122,14 +87,14 @@ public class Marathon {
         }
     }
 
-    public static void updateScore(PlayerData data) {
+    public void updateScore(PlayerData data) {
         if(data != null) {
             Call.setHudText(data.player.con, "score : " + data.config.getInt("score", 0));
         }
     }
 
-    public static void updateScore(PlayerData data, int variation) {
-        if(db.gameMode("marathon") && data != null){
+    public void updateScore(PlayerData data, int variation) {
+        if(active && data != null){
             int score = data.config.getInt("score", 0) + variation;
             data.config.put("score", score);
             Call.setHudText(data.player.con, "score : " + score);
@@ -138,17 +103,69 @@ public class Marathon {
         }
     }
 
-    public static void updateScore() {
+    public void updateScore() {
         db.players.sort(d -> d.config.getInt("score", 0));
         for(int i = 0; i < 3 && i < db.players.size; i++) {
             scoreboard[i] = db.players.get(db.players.size - 1 - i);
         }
     }
 
-    public static String scoreboard() {
+    public String scoreboard() {
         return "< ScoreBoard >\n" +
                 (scoreboard[0] != null ? "1st " + scoreboard[0].player.name() + "(" + scoreboard[0].config.getInt("score", 0) + ")\n" : "\n")  +
                 (scoreboard[1] != null ? "2nd " + scoreboard[1].player.name() + "(" + scoreboard[1].config.getInt("score", 0) + ")\n" : "\n")  +
                 (scoreboard[2] != null ? "3rd " + scoreboard[2].player.name() + "(" + scoreboard[2].config.getInt("score", 0) + ")" : "");
+    }
+
+    @Override
+    public boolean active() {
+        try {
+            if(state.is(GameState.State.playing)){
+                err("Already hosting. Type 'stop' to stop hosting first.");
+                return false;
+            } else {
+                skills.active();
+                commands.active();
+                content.units().find(unitType -> unitType == UnitTypes.dagger).abilities.add(new ShieldRegenFieldAbility(20f, 40f, 60f * 4, 60f));
+
+                logic.reset();
+                Map loadMap = maps.all().find(map -> Objects.equals(map.name(), "Marathon"));
+                world.loadMap(loadMap, loadMap.applyRules(Gamemode.survival));
+                state.rules = loadMap.applyRules(Gamemode.survival);
+                logic.play();
+                netServer.openServer();
+                active = true;
+                db.gameMode("solo").active();
+
+                Team.sharded.core().health(Float.MAX_VALUE);
+                active = true;
+                return true;
+            }
+        } catch (Exception e) {
+            Log.info(e.getLocalizedMessage());
+            return false;
+        }
+    }
+
+    @Override
+    public void disable() {
+        skills.disable();
+        commands.disable();
+        active = false;
+    }
+
+    @Override
+    public boolean isActive() {
+        return active;
+    }
+
+    @Override
+    public String name() {
+        return "marathon";
+    }
+
+    @Override
+    public @NotNull Jval config() {
+        return config;
     }
 }
