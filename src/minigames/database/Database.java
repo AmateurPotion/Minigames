@@ -25,6 +25,7 @@ import minigames.type.dataType.PlayerData;
 import minigames.type.ctype.Skill;
 import minigames.io.EventList;
 import minigames.utils.MenuManager;
+import minigames.utils.Synthesis;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
@@ -146,7 +147,7 @@ public class Database {
         Jval skillSet = Jval.newArray();
 
         // default values
-        data.config.asObject().forEach(e -> {
+        Synthesis.serialize(data.config.asObject()).asObject().forEach(e -> {
             if(!e.key.contains("@NS")) {
                 save.put(e.key, e.value);
             }
@@ -297,6 +298,11 @@ public class Database {
 
         @Override
         public void disable() {
+
+        }
+
+        @Override
+        public void load() {
 
         }
 

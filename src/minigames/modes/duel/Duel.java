@@ -22,8 +22,6 @@ public class Duel implements GameMode {
         duelQueue = new LinkedList<>();
     }
 
-
-
     public void addDuel(DuelStack duel) {
         duelQueue.add(duel);
         updateDuel();
@@ -51,6 +49,11 @@ public class Duel implements GameMode {
     @Override
     public void disable() {
         active = false;
+    }
+
+    @Override
+    public void load() {
+
     }
 
     @Override

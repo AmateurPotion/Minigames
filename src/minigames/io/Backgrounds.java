@@ -34,7 +34,6 @@ public class Backgrounds {
                         if(current == null || current.floor() == Blocks.space) {
                             PlayerData data = db.players.find(d -> d.player == player);
                             mode.home(data);
-
                             mode.updateScore(data, -(int)(data.config.getInt("score", 0) * 0.01f));
                         }
                         else if(current.floor() == Blocks.sandWater || current.floor() == Blocks.dirt) Events.fire(new MarathonEvents.MarathonLineArrivalEvent(player, player.unit(), current));
