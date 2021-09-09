@@ -13,7 +13,7 @@ public class PlayerManager {
 
     public static Unit changeUnit(Player player, UnitType unit) {
         Unit target = unit.spawn(player.team(), player);
-        if(db.gameMode("marathon")) {
+        if(db.gameMode("marathon").isActive()) {
 
             if(target.health() > 1000) target.health(target.health() / 20);
             if(target.health() > 500) target.health(target.health() / 2);

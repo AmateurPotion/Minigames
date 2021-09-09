@@ -31,12 +31,13 @@ public class Marathon implements GameMode {
     public PlayerData[] scoreboard = new PlayerData[3];
     private final MarathonCommands commands;
     private final MarathonSkills skills;
+    private final MarathonEvents events;
     private boolean active = false;
     private final Random random = new Random();
     private int[] xl, yl;
 
     public Position getStartPoint(int lineNum) {
-        return new Pos(xl[lineNum], yl[lineNum]);
+        return new Pos(xl[lineNum] * 8, yl[lineNum] * 8);
     }
 
     public Marathon() {
@@ -49,6 +50,7 @@ public class Marathon implements GameMode {
         };
         skills = new MarathonSkills();
         commands = new MarathonCommands();
+        events = new MarathonEvents();
     }
 
     public void home(PlayerData data) {
@@ -123,23 +125,29 @@ public class Marathon implements GameMode {
             if(state.is(GameState.State.playing)){
                 err("Already hosting. Type 'stop' to stop hosting first.");
                 return false;
-            } else {
-                skills.active();
-                commands.active();
-                content.units().find(unitType -> unitType == UnitTypes.dagger).abilities.add(new ShieldRegenFieldAbility(20f, 40f, 60f * 4, 60f));
-
+            } else if(!active) {
                 logic.reset();
                 Map loadMap = maps.all().find(map -> Objects.equals(map.name(), "Marathon"));
                 world.loadMap(loadMap, loadMap.applyRules(Gamemode.survival));
                 state.rules = loadMap.applyRules(Gamemode.survival);
                 logic.play();
                 netServer.openServer();
+                if(state.getState() == GameState.State.menu) {
+                    return false;
+                }
+                skills.active();
+                commands.active();
+                events.active();
+                content.units().find(unitType -> unitType == UnitTypes.dagger).abilities.add(new ShieldRegenFieldAbility(20f, 40f, 60f * 4, 60f));
+
                 active = true;
                 db.gameMode("solo").active();
 
                 Team.sharded.core().health(Float.MAX_VALUE);
                 active = true;
                 return true;
+            } else {
+                return false;
             }
         } catch (Exception e) {
             Log.info(e.getLocalizedMessage());
@@ -151,7 +159,15 @@ public class Marathon implements GameMode {
     public void disable() {
         skills.disable();
         commands.disable();
+        events.disable();
         active = false;
+    }
+
+    @Override
+    public void load() {
+        skills.load();
+        commands.load();
+        events.load();
     }
 
     @Override

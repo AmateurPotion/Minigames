@@ -48,6 +48,8 @@ public class Entry extends Mod{
         shuffleTimer.scheduleTask(shuffleTask, 10, Core.settings.getInt("teamShuffleDelay", 120));
 
         backgrounds.startPlayerChecker();
+
+        db.gameMode.forEach((name, mode) -> mode.load());
     }
 
     @Override

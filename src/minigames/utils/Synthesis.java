@@ -2,6 +2,7 @@ package minigames.utils;
 
 import arc.struct.Seq;
 import arc.util.Log;
+import arc.util.serialization.Jval;
 import mindustry.Vars;
 import mindustry.content.Items;
 import mindustry.gen.Iconc;
@@ -64,5 +65,37 @@ public class Synthesis {
 
     public static char findItemIcon(@NotNull Item item) {
         return itemIcons.get(item);
+    }
+
+    public static Jval serialize(Jval.JsonMap origin) {
+        Jval result = Jval.newObject();
+        origin.forEach((val) -> {
+            if(!val.key.contains("@NS")) {
+                switch (val.value.getType()) {
+                    case array -> result.add(val.key, serialize(val.value.asArray()));
+                    case object -> result.add(val.key, serialize(val.value.asObject()));
+                    default -> result.add(val.key, val.value);
+                }
+            }
+        });
+
+        return result;
+    }
+
+    public static Jval serialize(Jval.JsonArray origin) {
+        Jval result = Jval.newArray();
+        origin.forEach(val -> {
+            switch (val.getType()) {
+                case string -> {
+                    if (!val.asString().contains("@NS")) {
+                        result.add(val);
+                    }
+                }
+                case array -> result.add(serialize(val.asArray()));
+                case object -> result.add(serialize(val.asObject()));
+                default -> result.add(val);
+            }
+        });
+        return result;
     }
 }

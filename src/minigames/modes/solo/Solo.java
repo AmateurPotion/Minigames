@@ -31,6 +31,11 @@ public class Solo implements GameMode {
     }
 
     @Override
+    public void load() {
+
+    }
+
+    @Override
     public boolean isActive() {
         return active;
     }
